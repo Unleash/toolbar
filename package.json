@@ -23,7 +23,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "serve:example": "npx serve -p 3000 .",
     "serve:example:react": "cd examples/react && npm run dev",
