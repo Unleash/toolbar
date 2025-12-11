@@ -15,6 +15,7 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 ## Installation
 
 ```bash
+# note: this doesn't work yet
 npm install @unleash/toolbar
 ```
 
@@ -307,17 +308,6 @@ Or override CSS variables globally:
 }
 ```
 
-## Storage Modes
-
-### Memory (Default)
-Overrides lost on page refresh. Good for temporary testing.
-
-### Session Storage
-Overrides persist within the current tab/window session.
-
-### Local Storage
-Overrides persist across browser sessions. Best for ongoing development.
-
 ## Development
 
 ```bash
@@ -329,9 +319,6 @@ npm run build
 
 # Run type checking
 npm run type-check
-
-# Serve the vanilla example
-npm run preview
 ```
 
 ## Browser Support
@@ -340,10 +327,6 @@ Works in all modern browsers:
 - Chrome/Edge 90+
 - Firefox 88+
 - Safari 14+
-
-## Contributing
-
-Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
