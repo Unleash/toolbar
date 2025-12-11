@@ -1,0 +1,51 @@
+<div class="container">
+  <header>
+    <h1>Unleash Toolbar + Angular</h1>
+    <p>This demo shows the Unleash Session Override Toolbar integrated with Angular.</p>
+    <p>The toolbar appears at the bottom of the page and allows you to override feature flags in real-time.</p>
+  </header>
+
+  <div *ngIf="!isReady" class="loading">
+    <p>Loading Unleash client...</p>
+  </div>
+
+  <div *ngIf="isReady" class="features">
+    <div class="feature-card">
+      <div class="feature-header">
+        <h2>new-checkout</h2>
+        <span [class]="'status ' + (newCheckout ? 'on' : 'off')">
+          {{ newCheckout ? 'ON' : 'OFF' }}
+        </span>
+      </div>
+      <p>Enable the new checkout flow with improved UX</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <h2>dark-mode</h2>
+        <span [class]="'status ' + (darkMode ? 'on' : 'off')">
+          {{ darkMode ? 'ON' : 'OFF' }}
+        </span>
+      </div>
+      <p>Toggle dark mode theme</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <h2>payment-provider</h2>
+        <span class="status variant">{{ paymentProvider }}</span>
+      </div>
+      <p>Select payment provider (stripe, paypal, square)</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <h2>premium-features</h2>
+        <span [class]="'status ' + (premium ? 'on' : 'off')">
+          {{ premium ? 'ON' : 'OFF' }}
+        </span>
+      </div>
+      <p>Access to premium features</p>
+    </div>
+  </div>
+</div>

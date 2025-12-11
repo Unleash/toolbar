@@ -1,0 +1,13 @@
+/* Import toolbar styles */
+@import '@unleash/toolbar/style.css';
+
+/* Global styles */
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f6fa;
+}
+
+* {
+  box-sizing: border-box;
+}
