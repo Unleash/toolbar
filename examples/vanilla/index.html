@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unleash Toolbar - Vanilla JS Example</title>
+  <link rel="stylesheet" href="../../dist/style.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🚀 Unleash Session Toolbar Demo</h1>
+  <p>This demo shows the Unleash Session Toolbar with the Unleash JavaScript SDK.</p>
+  <p>Use the toolbar to override flag values and see changes in real-time!</p>
+
+  <div class="feature-demo">
+    <h2>Feature: New Checkout Flow</h2>
+    <div id="checkout-content"></div>
+  </div>
+
+  <div class="feature-demo">
+    <h2>Feature: Dark Mode</h2>
+    <div id="darkmode-content"></div>
+  </div>
+
+  <div class="feature-demo">
+    <h2>Feature: Payment Provider (Variant)</h2>
+    <div id="payment-content"></div>
+  </div>
+
+  <div class="feature-demo">
+    <h2>Feature: Premium Features</h2>
+    <div id="premium-content"></div>
+  </div>
+
+  <!-- Load configuration (gitignored, see config.example.js) -->
+  <script src="config.js"></script>
+
+  <script type="module">
+    import { UnleashClient } from 'https://cdn.jsdelivr.net/npm/unleash-proxy-client@3.7.8/+esm';
+    import { initUnleashToolbar } from '../../dist/index.es.js';
+
+    // Check if config is loaded
+    if (!window.UNLEASH_CONFIG) {
+      document.body.innerHTML = '<h1>⚠️ Configuration Missing</h1><p>Please copy config.example.js to config.js and add your Unleash credentials.</p>';
+      throw new Error('UNLEASH_CONFIG not found. Copy config.example.js to config.js');
+    }
+
+    const config = window.UNLEASH_CONFIG;
+
+    // Initialize client with toolbar
+    const client = initUnleashToolbar(new UnleashClient({
+      url: config.url,
+      clientKey: config.clientKey,
+      appName: config.appName,
+      environment: 'development',
+      refreshInterval: 15,
+      context: {
+        userId: 'user-abc',
+        properties: {
+          userRole: 'admin',
+          region: 'us-west',
+        },
+      },
+    }), {
+      themePreset: 'dark',
+    });
+
+    await client.start();
+
+    // Evaluate and render all features
+    function evaluateFeatures() {
+      const hasNewCheckout = client.isEnabled('new-checkout-flow');
+      document.getElementById('checkout-content').innerHTML = hasNewCheckout
+        ? '<p style="color: green;">✅ <strong>New checkout flow is ENABLED</strong><br>Users will see the redesigned checkout page.</p>'
+        : '<p style="color: #666;">❌ <strong>New checkout flow is DISABLED</strong><br>Users will see the classic checkout page.</p>';
+
+      const darkModeEnabled = client.isEnabled('dark-mode');
+      document.getElementById('darkmode-content').innerHTML = darkModeEnabled
+        ? '<p style="color: green;">✅ <strong>Dark mode is ENABLED</strong><br>Using dark theme colors.</p>'
+        : '<p style="color: #666;">❌ <strong>Dark mode is DISABLED</strong><br>Using standard light theme.</p>';
+      
+      const paymentVariant = client.getVariant('payment-provider');
+      const variantInfo = paymentVariant.enabled 
+        ? `<p style="color: green;">✅ <strong>Using variant: ${paymentVariant.name}</strong><br>Payment handled by ${paymentVariant.name}.</p>`
+        : '<p style="color: #666;">❌ <strong>Variant disabled</strong><br>Using default payment provider.</p>';
+      document.getElementById('payment-content').innerHTML = variantInfo;
+
+      const premiumEnabled = client.isEnabled('premium-features');
+      document.getElementById('premium-content').innerHTML = premiumEnabled
+        ? '<p style="color: green;">✅ <strong>Premium features are ENABLED</strong><br>Access to advanced features.</p>'
+        : '<p style="color: #666;">❌ <strong>Premium features are DISABLED</strong><br>Standard features only.</p>';
+    }
+
+    evaluateFeatures();
+
+    // Re-evaluate on toolbar events
+    window.unleashToolbar.subscribe((event) => {
+      if (event.type === 'flag_override_changed' || 
+          event.type === 'context_override_changed' ||
+          event.type === 'sdk_updated') {
+        evaluateFeatures();
+      }
+    });
+  </script>
+</body>
+</html>
