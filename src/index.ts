@@ -1,0 +1,110 @@
+import { ToolbarStateManager } from './state';
+import { wrapUnleashClient } from './wrapper';
+import { ToolbarUI } from './ui';
+import {
+  UnleashClient,
+  WrappedUnleashClient,
+  UnleashToolbarInstance,
+  InitToolbarOptions,
+  ToolbarState,
+  FlagOverride,
+  UnleashContext,
+  ToolbarEventListener,
+} from './types';
+
+/**
+ * Main toolbar instance implementation
+ */
+class UnleashToolbar implements UnleashToolbarInstance {
+  private stateManager: ToolbarStateManager;
+  private ui: ToolbarUI;
+  public readonly client: WrappedUnleashClient;
+
+  constructor(
+    stateManager: ToolbarStateManager,
+    wrappedClient: WrappedUnleashClient,
+    options: InitToolbarOptions
+  ) {
+    this.stateManager = stateManager;
+    this.client = wrappedClient;
+    this.ui = new ToolbarUI(stateManager, wrappedClient, options);
+  }
+
+  show(): void {
+    this.ui.show();
+  }
+
+  hide(): void {
+    this.ui.hide();
+  }
+
+  destroy(): void {
+    this.ui.destroy();
+    this.stateManager.clearPersistence();
+  }
+
+  getState(): ToolbarState {
+    return this.stateManager.getState();
+  }
+
+  setFlagOverride(name: string, override: FlagOverride | null): void {
+    this.stateManager.setFlagOverride(name, override);
+  }
+
+  setContextOverride(context: Partial<UnleashContext>): void {
+    this.stateManager.setContextOverride(context);
+  }
+
+  removeContextOverride(fieldName: keyof UnleashContext): void {
+    this.stateManager.removeContextOverride(fieldName);
+  }
+
+  resetOverrides(): void {
+    this.stateManager.resetOverrides();
+  }
+
+  resetContextOverrides(): void {
+    this.stateManager.resetContextOverrides();
+  }
+
+  subscribe(listener: ToolbarEventListener): () => void {
+    return this.stateManager.subscribe(listener);
+  }
+}
+
+/**
+ * Initialize the Unleash Toolbar with a client
+ * This is the main entry point - handles both toolbar creation and client wrapping
+ * Returns the wrapped client directly for immediate use
+ */
+export function initUnleashToolbar(
+  client: UnleashClient,
+  options: InitToolbarOptions = {}
+): WrappedUnleashClient {
+  const storageMode = options.storageMode || 'local';
+  const storageKey = options.storageKey || 'unleash-toolbar-state';
+  const sortAlphabetically = options.sortAlphabetically || false;
+
+  const stateManager = new ToolbarStateManager(storageMode, storageKey, sortAlphabetically);
+  const wrappedClient = wrapUnleashClient(client, stateManager);
+  const toolbar = new UnleashToolbar(stateManager, wrappedClient, options);
+
+  // Expose toolbar instance globally for debugging/advanced use
+  if (typeof window !== 'undefined') {
+    (window as any).unleashToolbar = toolbar;
+  }
+
+  return wrappedClient;
+}
+
+// UMD global export
+if (typeof window !== 'undefined') {
+  (window as any).UnleashToolbar = {
+    init: initUnleashToolbar,
+  };
+}
+
+// Export types
+export * from './types';
+export { wrapUnleashClient } from './wrapper';
+export { ToolbarStateManager } from './state';

@@ -1,0 +1,62 @@
+{
+  "name": "@unleash/toolbar",
+  "version": "0.1.0",
+  "description": "Client-side override toolbar for Unleash JavaScript SDKs",
+  "type": "module",
+  "main": "./dist/index.es.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react.es.js",
+      "types": "./dist/react.d.ts"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "serve:example": "npx serve -p 3000 .",
+    "serve:example:react": "cd examples/react && npm run dev",
+    "serve:example:nextjs": "cd examples/nextjs && npm run dev",
+    "serve:example:angular": "cd examples/angular && npm start"
+  },
+  "keywords": [
+    "unleash",
+    "feature-flags",
+    "debugging",
+    "toolbar",
+    "override"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0",
+    "unleash-proxy-client": "^2.0.0 || ^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "cssnano": "^7.1.2",
+    "postcss": "^8.5.6",
+    "react": "^18.2.0",
+    "typescript": "^5.3.3",
+    "unleash-proxy-client": "^3.4.1",
+    "vite": "^5.0.8",
+    "vite-plugin-dts": "^3.6.4"
+  }
+}
