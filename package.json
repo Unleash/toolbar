@@ -15,7 +15,7 @@
       "import": "./dist/react.es.js",
       "types": "./dist/react.d.ts"
     },
-    "./style.css": "./dist/style.css"
+    "./toolbar.css": "./dist/toolbar.css"
   },
   "files": [
     "dist"
@@ -55,7 +55,7 @@
     "react": "^18.2.0",
     "typescript": "^5.3.3",
     "unleash-proxy-client": "^3.4.1",
-    "vite": "^5.0.8",
-    "vite-plugin-dts": "^3.6.4"
+    "vite": "^7.2.7",
+    "vite-plugin-dts": "^4.5.4"
   }
 }

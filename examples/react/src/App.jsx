@@ -1,6 +1,6 @@
 import { UnleashClient } from 'unleash-proxy-client'
 import { UnleashToolbarProvider, useFlag, useVariant } from '../../../dist/react.es.js'
-import '../../../dist/style.css'
+import '../../../dist/toolbar.css'
 
 // Create Unleash client from environment variables
 const unleashClient = new UnleashClient({

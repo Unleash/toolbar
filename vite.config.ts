@@ -28,7 +28,6 @@ export default defineConfig({
           'unleash-proxy-client': 'UnleashClient'
         },
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'style.css') return 'style.css';
           if (assetInfo.name?.endsWith('.png')) return 'assets/[name][extname]';
           return assetInfo.name || '';
         }

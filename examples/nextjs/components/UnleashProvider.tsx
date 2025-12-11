@@ -2,7 +2,7 @@
 
 import { UnleashClient } from 'unleash-proxy-client';
 import { UnleashToolbarProvider } from '@unleash/toolbar/react';
-import '@unleash/toolbar/style.css';
+import '@unleash/toolbar/toolbar.css';
 
 // Create Unleash client from environment variables
 const client = new UnleashClient({

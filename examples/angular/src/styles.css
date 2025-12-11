@@ -1,5 +1,5 @@
 /* Import toolbar styles */
-@import '@unleash/toolbar/style.css';
+@import '@unleash/toolbar/toolbar.css';
 
 /* Global styles */
 body {
