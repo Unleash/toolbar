@@ -113,7 +113,8 @@ export interface InitToolbarOptions {
 }
 
 /**
- * Toolbar event types
+ * Toolbar event types (internal use only - not part of public API)
+ * @internal
  */
 export type ToolbarEvent =
   | {
@@ -132,7 +133,8 @@ export type ToolbarEvent =
     };
 
 /**
- * Event listener function
+ * Event listener function (internal use only - not part of public API)
+ * @internal
  */
 export type ToolbarEventListener = (event: ToolbarEvent) => void;
 
@@ -164,8 +166,6 @@ export interface UnleashToolbarInstance {
   
   resetOverrides(): void;
   resetContextOverrides(): void;
-  
-  subscribe(listener: ToolbarEventListener): () => void;
 }
 
 /**
@@ -176,6 +176,8 @@ export interface UnleashClient {
   getVariant(toggleName: string): UnleashVariant;
   getContext?(): UnleashContext;
   updateContext?(context: UnleashContext): Promise<void>;
+  on(event: string, callback: (...args: any[]) => void): void;
+  start(): Promise<void>;
   [key: string]: any;
 }
 

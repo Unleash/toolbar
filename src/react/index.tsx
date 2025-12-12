@@ -3,7 +3,6 @@ import {
   UnleashClient,
   WrappedUnleashClient,
   InitToolbarOptions,
-  UnleashContext,
   UnleashVariant,
 } from '../types';
 import { initUnleashToolbar } from '../index';
@@ -44,18 +43,10 @@ export function UnleashToolbarProvider({
       } else {
         wrappedClientRef.current = initUnleashToolbar(client, toolbarOptions);
         
-        // Subscribe to toolbar events (only when toolbar is enabled)
-        if ((window as any).unleashToolbar) {
-          (window as any).unleashToolbar.subscribe((event: any) => {
-            if (
-              event.type === 'flag_override_changed' ||
-              event.type === 'context_override_changed' ||
-              event.type === 'sdk_updated'
-            ) {
-              setRefreshKey((prev: number) => prev + 1);
-            }
-          });
-        }
+        // Listen to SDK 'update' events (triggered by SDK and toolbar changes)
+        wrappedClientRef.current.on('update', () => {
+          setRefreshKey((prev: number) => prev + 1);
+        });
       }
       
       // Start the client
@@ -92,16 +83,6 @@ export function useUnleashClient(): UnleashClient {
     throw new Error('useUnleashClient must be used within UnleashToolbarProvider');
   }
   return context.client;
-}
-
-/**
- * Hook to access the toolbar instance from window.unleashToolbar
- */
-export function useUnleashToolbar() {
-  if (typeof window === 'undefined' || !(window as any).unleashToolbar) {
-    throw new Error('Toolbar not initialized. Make sure UnleashToolbarProvider is mounted.');
-  }
-  return (window as any).unleashToolbar;
 }
 
 /**
@@ -148,43 +129,4 @@ export function useVariant(
   }, [client, flagName, refreshKey]);
 
   return variant;
-}
-
-/**
- * Hook to manually override a flag value
- */
-export function useFlagOverride(flagName: string) {
-  const toolbar = useUnleashToolbar();
-
-  return {
-    setOverride: (value: boolean | null) => {
-      if (value === null) {
-        toolbar.setFlagOverride(flagName, null);
-      } else {
-        toolbar.setFlagOverride(flagName, { type: 'boolean', value });
-      }
-    },
-    clearOverride: () => {
-      toolbar.setFlagOverride(flagName, null);
-    },
-  };
-}
-
-/**
- * Hook to manage context overrides
- */
-export function useContextOverride() {
-  const toolbar = useUnleashToolbar();
-
-  return {
-    setContext: (context: Partial<UnleashContext>) => {
-      toolbar.setContextOverride(context);
-    },
-    resetContext: () => {
-      toolbar.resetContextOverrides();
-    },
-    getState: () => {
-      return toolbar.getState();
-    },
-  };
 }

@@ -26,6 +26,8 @@ export function wrapUnleashClient(
         __original: baseClient,
         isEnabled,
         getVariant,
+        on: undefined as any, // Will be set below
+        start: undefined as any, // Will be set below
     };
 
     function isEnabled(
@@ -84,30 +86,57 @@ export function wrapUnleashClient(
         };
     }
 
-    // Listen to SDK 'update' event to re-evaluate flags when config changes
-    if (typeof baseClient.on === 'function') {
-        baseClient.on('update', () => {
-            // Re-evaluate all known flags with the new SDK configuration
-            stateManager.reEvaluateAllFlags((flagName) => {
-                // Get flag metadata to determine type
-                const metadata = stateManager.getFlagMetadata(flagName);
-                const isVariant = metadata?.flagType === 'variant';
-                
-                // Get new default value from SDK using correct method
-                const defaultValue = isVariant 
-                    ? baseClient.getVariant(flagName)
-                    : baseClient.isEnabled(flagName);
-                
-                // Apply override if exists
-                const override = stateManager.getFlagOverride(flagName);
-                const effectiveValue = applyFlagOverride(defaultValue, override);
-                
-                return { defaultValue, effectiveValue };
-            });
-        });
-    }
+    // Track user-registered 'update' listeners so we can trigger them on toolbar changes
+    const updateListeners = new Set<() => void>();
 
-    // Listen to context override changes to update client context and re-evaluate flags
+    // Intercept on() method to capture 'update' listeners
+    wrappedClient.on = function (event: string, callback: () => void): void {
+        if (event === 'update') {
+            updateListeners.add(callback);
+        }
+        // Forward to base client
+        baseClient.on(event, callback);
+    };
+
+    // Forward start() to base client
+    wrappedClient.start = function (): Promise<void> {
+        return baseClient.start();
+    };
+
+    // Helper to trigger all registered 'update' listeners
+    const triggerUpdateListeners = () => {
+        updateListeners.forEach(callback => {
+            try {
+                callback();
+            } catch (error) {
+                console.error('[Unleash Toolbar] Error in update listener:', error);
+            }
+        });
+    };
+
+    // Listen to SDK 'update' event to re-evaluate flags when config changes
+    baseClient.on('update', () => {
+        // Re-evaluate all known flags with the new SDK configuration
+        stateManager.reEvaluateAllFlags((flagName) => {
+            // Get flag metadata to determine type
+            const metadata = stateManager.getFlagMetadata(flagName);
+            const isVariant = metadata?.flagType === 'variant';
+            
+            // Get new default value from SDK using correct method
+            const defaultValue = isVariant 
+                ? baseClient.getVariant(flagName)
+                : baseClient.isEnabled(flagName);
+            
+            // Apply override if exists
+            const override = stateManager.getFlagOverride(flagName);
+            const effectiveValue = applyFlagOverride(defaultValue, override);
+            
+            return { defaultValue, effectiveValue };
+        });
+        // Trigger user's 'update' listeners (already called by SDK, but for consistency)
+    });
+
+    // Listen to toolbar state changes to update client context and trigger re-renders
     stateManager.subscribe((event) => {
         if (event.type === 'context_override_changed') {
             // Update the base client's context with merged context
@@ -137,10 +166,18 @@ export function wrapUnleashClient(
                         
                         return { defaultValue, effectiveValue };
                     });
+                    // Trigger user's 'update' listeners after context change
+                    triggerUpdateListeners();
                 }).catch(err => {
                     console.error('[Unleash Toolbar] Failed to update context:', err);
                 });
             }
+        }
+
+        // Trigger user's 'update' listeners for flag override changes
+        // (flag_override_changed is emitted when override is set or removed, including bulk resets)
+        if (event.type === 'flag_override_changed') {
+            triggerUpdateListeners();
         }
     });
 

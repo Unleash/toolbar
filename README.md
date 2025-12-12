@@ -51,6 +51,13 @@ await client.start();
 // Use the client for all flag evaluations
 const isEnabled = client.isEnabled('my-feature');
 const variant = client.getVariant('my-experiment');
+
+// Listen for changes (from toolbar or SDK updates)
+client.on('update', () => {
+  // Re-evaluate flags when overrides change
+  const newValue = client.isEnabled('my-feature');
+  updateUI(newValue);
+});
 ```
 
 ### React
@@ -221,14 +228,23 @@ toolbar.setContextOverride({
 toolbar.resetOverrides();
 toolbar.resetContextOverrides();
 
-// Subscribe to events
-const unsubscribe = toolbar.subscribe((event) => {
-  console.log(event.type, event);
-});
-
 // Cleanup
 toolbar.destroy();
 ```
+
+### Listening to Changes
+
+The toolbar automatically triggers the Unleash SDK's `'update'` event when overrides change. Use the standard SDK pattern to listen for changes:
+
+```typescript
+// Listen to flag/context changes from the toolbar
+client.on('update', () => {
+  console.log('Flags updated - re-evaluate your flags');
+  // Re-render your UI, re-check flags, etc.
+});
+```
+
+This works for both toolbar changes (flag overrides, context overrides) and SDK changes (new config from server).
 
 ### React Hooks
 
@@ -236,10 +252,7 @@ toolbar.destroy();
 import {
   useFlag,
   useVariant,
-  useUnleashClient,
-  useUnleashToolbar,
-  useFlagOverride,
-  useContextOverride
+  useUnleashClient
 } from '@unleash/toolbar/react';
 
 // Check flag status
@@ -250,45 +263,6 @@ const variant = useVariant('my-experiment');
 
 // Access wrapped client
 const client = useUnleashClient();
-
-// Access toolbar instance
-const toolbar = useUnleashToolbar();
-
-// Control specific flag
-const { setOverride, clearOverride } = useFlagOverride('my-feature');
-setOverride(true);  // Force ON
-setOverride(false); // Force OFF
-clearOverride();    // Reset to default
-
-// Control context
-const { setContext, resetContext, getState } = useContextOverride();
-setContext({ userId: 'test-123' });
-resetContext();
-```
-
-## Events
-
-The toolbar emits events for state changes:
-
-```typescript
-toolbar.subscribe((event) => {
-  switch (event.type) {
-    case 'flag_override_changed':
-      // Override was set or cleared for a specific flag
-      console.log(event.name, event.override, event.timestamp);
-      break;
-      
-    case 'context_override_changed':
-      // Context was updated
-      console.log(event.contextOverrides);
-      break;
-      
-    case 'sdk_updated':
-      // Flags were re-evaluated (after context change or new flag detected)
-      console.log('SDK updated at', event.timestamp);
-      break;
-  }
-});
 ```
 
 ## UI Features

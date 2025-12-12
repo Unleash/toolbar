@@ -327,14 +327,17 @@ export class ToolbarStateManager {
       // Recalculate effective value (will match default)
       const defaultValue = this.state.flags[name].lastDefaultValue;
       this.state.flags[name].lastEffectiveValue = defaultValue;
+      
+      // Emit event for each flag override removal
+      this.eventEmitter.emit({
+        type: 'flag_override_changed',
+        name,
+        override: null,
+        timestamp: Date.now(),
+      });
     });
 
     this.persist();
-
-    this.eventEmitter.emit({
-      type: 'sdk_updated',
-      timestamp: Date.now(),
-    });
   }
 
   /**

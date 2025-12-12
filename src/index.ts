@@ -8,7 +8,6 @@ import {
   ToolbarState,
   FlagOverride,
   UnleashContext,
-  ToolbarEventListener,
   IToolbarUI,
 } from './types';
 
@@ -77,10 +76,6 @@ class UnleashToolbar implements UnleashToolbarInstance {
 
   resetContextOverrides(): void {
     this.stateManager.resetContextOverrides();
-  }
-
-  subscribe(listener: ToolbarEventListener): () => void {
-    return this.stateManager.subscribe(listener);
   }
 }
 
