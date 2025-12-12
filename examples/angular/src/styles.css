@@ -1,6 +1,3 @@
-/* Import toolbar styles */
-@import '@unleash/toolbar/toolbar.css';
-
 /* Global styles */
 body {
   margin: 0;

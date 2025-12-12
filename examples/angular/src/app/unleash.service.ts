@@ -1,6 +1,7 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { UnleashClient } from 'unleash-proxy-client';
 import { initUnleashToolbar } from '@unleash/toolbar';
+import '@unleash/toolbar/toolbar.css';
 import { environment } from '../environments/environment';
 
 @Injectable({
