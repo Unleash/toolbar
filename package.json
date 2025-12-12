@@ -24,6 +24,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "type-check": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "serve:example": "npx serve -p 3000 .",
     "serve:example:react": "cd examples/react && npm run dev",
     "serve:example:nextjs": "cd examples/nextjs && npm run dev",
@@ -49,13 +51,17 @@
     }
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/eslint": "^9.6.1",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "cssnano": "^7.1.2",
+    "eslint": "^9.39.2",
     "postcss": "^8.5.6",
     "react": "^18.2.0",
     "terser": "^5.44.1",
     "typescript": "^5.3.3",
+    "typescript-eslint": "^8.49.0",
     "unleash-proxy-client": "^3.4.1",
     "vite": "^7.2.7",
     "vite-plugin-dts": "^4.5.4"
