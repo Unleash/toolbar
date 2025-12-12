@@ -174,7 +174,7 @@ function applyFlagOverride(
 ): boolean | UnleashVariant | null {
   if (!override) return defaultValue;
 
-  if (override.type === 'boolean') {
+  if (override.type === 'flag') {
     return override.value;
   }
 

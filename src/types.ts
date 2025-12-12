@@ -31,7 +31,7 @@ export interface UnleashVariant {
  * Flag override types
  */
 export type FlagOverride =
-  | { type: 'boolean'; value: boolean }
+  | { type: 'flag'; value: boolean }
   | { type: 'variant'; variantKey: string };
 
 /**

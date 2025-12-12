@@ -223,7 +223,7 @@ export class ToolbarUI {
     
     // Determine current state for toggle
     let toggleState = 'default';
-    if (hasOverride && metadata.override?.type === 'boolean') {
+    if (hasOverride && metadata.override?.type === 'flag') {
       toggleState = metadata.override.value ? 'on' : 'off';
     }
 
@@ -487,9 +487,9 @@ export class ToolbarUI {
         if (value === 'default') {
           this.stateManager.setFlagOverride(flagName, null);
         } else if (value === 'on') {
-          this.stateManager.setFlagOverride(flagName, { type: 'boolean', value: true });
+          this.stateManager.setFlagOverride(flagName, { type: 'flag', value: true });
         } else if (value === 'off') {
-          this.stateManager.setFlagOverride(flagName, { type: 'boolean', value: false });
+          this.stateManager.setFlagOverride(flagName, { type: 'flag', value: false });
         }
       });
     });
