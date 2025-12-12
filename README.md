@@ -25,7 +25,7 @@ npm install @unleash/toolbar
 ```javascript
 import { initUnleashToolbar } from '@unleash/toolbar';
 import { UnleashClient } from 'unleash-proxy-client';
-import '@unleash/toolbar/style.css';
+import '@unleash/toolbar/toolbar.css';
 
 // Initialize toolbar with new Unleash client - returns wrapped client
 const client = initUnleashToolbar(new UnleashClient({
@@ -50,7 +50,7 @@ const variant = client.getVariant('my-experiment');
 
 ```tsx
 import { UnleashToolbarProvider, useFlag, useVariant } from '@unleash/toolbar/react';
-import '@unleash/toolbar/style.css';
+import '@unleash/toolbar/toolbar.css';
 
 // Wrap your app with the provider
 function App() {
@@ -88,7 +88,7 @@ function MyComponent() {
 
 import { UnleashToolbarProvider } from '@unleash/toolbar/react';
 import { unleashClient } from '@/lib/unleash';
-import '@unleash/toolbar/style.css';
+import '@unleash/toolbar/toolbar.css';
 
 export function Providers({ children }) {
   return (
@@ -97,6 +97,32 @@ export function Providers({ children }) {
     </UnleashToolbarProvider>
   );
 }
+```
+
+### Vue 3 (Composition API)
+
+```vue
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import { useUnleash } from './composables/useUnleash'
+
+// Initialize Unleash with the composable
+const { client, isReady, updateTrigger } = useUnleash()
+
+// Reactive flag states
+const isEnabled = ref(false)
+
+// Evaluate flags
+const evaluateFlags = () => {
+  if (!client.value) return
+  isEnabled.value = client.value.isEnabled('my-feature')
+}
+
+// Evaluate when ready
+watch(isReady, (ready) => {
+  if (ready) evaluateFlags()
+})
+</script>
 ```
 
 ## Configuration Options
@@ -318,6 +344,41 @@ npm run build
 # Run type checking
 npm run type-check
 ```
+
+### Example Applications
+
+The repository includes example applications demonstrating integration with different frameworks:
+
+- **Vanilla JS** - Basic HTML/JavaScript integration
+  ```bash
+  npm run serve:example
+  ```
+
+- **React** - Hooks and provider pattern
+  ```bash
+  npm run serve:example:react
+  ```
+
+- **Next.js** - Server-side rendering with client components
+  ```bash
+  npm run serve:example:nextjs
+  ```
+
+- **Angular** - Service-based integration
+  ```bash
+  npm run serve:example:angular
+  ```
+
+- **Vue 3** - Composition API with composables
+  ```bash
+  npm run serve:example:vue
+  ```
+
+All examples include:
+- Environment configuration setup
+- Multiple feature flags for testing
+- Variant flag demonstrations
+- Toolbar integration best practices
 
 ## Browser Support
 
