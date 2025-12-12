@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
-import {
-  UnleashClient,
-  WrappedUnleashClient,
-  InitToolbarOptions,
-  UnleashVariant,
-} from '../types';
 import { initUnleashToolbar } from '../index';
+import {
+  InitToolbarOptions,
+  UnleashClient,
+  UnleashVariant,
+  WrappedUnleashClient,
+} from '../types';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 interface UnleashToolbarContextValue {
-  client: WrappedUnleashClient;
+  client: WrappedUnleashClient | UnleashClient;
   refreshKey: number;
 }
 
@@ -28,7 +28,7 @@ export function UnleashToolbarProvider({
   toolbarOptions = {},
   children,
 }: UnleashToolbarProviderProps) {
-  const wrappedClientRef = useRef<WrappedUnleashClient | null>(null);
+  const wrappedClientRef = useRef<WrappedUnleashClient | UnleashClient | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function UnleashToolbarProvider({
     if (!wrappedClientRef.current) {
       // Skip toolbar initialization if toolbarOptions is explicitly undefined (production mode)
       if (toolbarOptions === undefined) {
-        wrappedClientRef.current = client as any;
+        wrappedClientRef.current = client;
       } else {
         wrappedClientRef.current = initUnleashToolbar(client, toolbarOptions);
         
@@ -61,7 +61,7 @@ export function UnleashToolbarProvider({
   // Fallback to a dummy wrapped client during SSR
   const contextValue = useMemo(
     () => ({
-      client: wrappedClientRef.current || (client as any as WrappedUnleashClient),
+      client: wrappedClientRef.current || client,
       refreshKey,
     }),
     [refreshKey]

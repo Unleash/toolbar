@@ -12,7 +12,6 @@ export interface UnleashContext {
   environment?: string;
   appName?: string;
   properties?: Record<string, string>;
-  [key: string]: any;
 }
 
 /**
@@ -39,11 +38,13 @@ export type FlagOverride =
  */
 export interface FlagMetadata {
   flagType: 'flag' | 'variant';
-  lastDefaultValue: boolean | UnleashVariant | null;
-  lastEffectiveValue: boolean | UnleashVariant | null;
+  lastDefaultValue: FlagValue;
+  lastEffectiveValue: FlagValue;
   lastContext: UnleashContext | null;
   override: FlagOverride | null;
 }
+
+export type FlagValue = boolean | UnleashVariant | null;
 
 /**
  * Complete toolbar state
@@ -176,9 +177,9 @@ export interface UnleashClient {
   getVariant(toggleName: string): UnleashVariant;
   getContext?(): UnleashContext;
   updateContext?(context: UnleashContext): Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   on(event: string, callback: (...args: any[]) => void): void;
   start(): Promise<void>;
-  [key: string]: any;
 }
 
 /**

@@ -1,9 +1,9 @@
 import {
+  FlagOverride,
   UnleashClient,
-  WrappedUnleashClient,
   UnleashContext,
   UnleashVariant,
-  FlagOverride,
+  WrappedUnleashClient,
 } from './types';
 import { ToolbarStateManager } from './state';
 
@@ -26,7 +26,9 @@ export function wrapUnleashClient(
         __original: baseClient,
         isEnabled,
         getVariant,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         on: undefined as any, // Will be set below
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         start: undefined as any, // Will be set below
     };
 
@@ -145,7 +147,7 @@ export function wrapUnleashClient(
             
             if (baseClient.updateContext) {
                 // Remove appName and environment - they are static and can't be updated
-                const { appName, environment, ...updatableContext } = mergedContext;
+                const { appName: _appName, environment: _environment, ...updatableContext } = mergedContext;
                 
                 // Update context on the client (this triggers SDK re-evaluation)
                 baseClient.updateContext(updatableContext).then(() => {

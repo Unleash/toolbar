@@ -1,9 +1,11 @@
 import { ToolbarStateManager } from './state';
 import {
-  InitToolbarOptions,
-  UnleashContext,
-  WrappedUnleashClient,
+  FlagValue,
   IToolbarUI,
+  InitToolbarOptions,
+  ToolbarState,
+  UnleashContext,
+  WrappedUnleashClient
 } from './types';
 import { html, render } from 'lit-html';
 
@@ -128,9 +130,9 @@ export class ToolbarUI implements IToolbarUI {
     render(template, this.rootElement);
   }
 
-  private renderHeader(state: any) {
+  private renderHeader(state: ToolbarState) {
     const flagCount = Object.keys(state.flags).length;
-    const overrideCount = Object.values(state.flags).filter((f: any) => f.override !== null).length;
+    const overrideCount = Object.values(state.flags).filter((f) => f.override !== null).length;
 
     return html`
       <div class="ut-header">
@@ -296,7 +298,7 @@ export class ToolbarUI implements IToolbarUI {
     `;
   }
 
-  private renderValueBadge(value: any) {
+  private renderValueBadge(value: FlagValue) {
     if (typeof value === 'boolean') {
       return html`<span class=${`ut-badge ut-badge-${value ? 'success' : 'danger'}`}>${value ? 'ON' : 'OFF'}</span>`;
     }

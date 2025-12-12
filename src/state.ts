@@ -1,12 +1,13 @@
 import {
-  ToolbarState,
+  FlagMetadata,
   FlagOverride,
-  UnleashContext,
-  UnleashVariant,
+  FlagValue,
   StorageMode,
   ToolbarEvent,
   ToolbarEventListener,
-  FlagMetadata,
+  ToolbarState,
+  UnleashContext,
+  UnleashVariant,
 } from './types';
 
 /**
@@ -154,7 +155,7 @@ export class ToolbarStateManager {
   /**
    * Re-evaluate all known flags (used when SDK configuration updates)
    */
-  reEvaluateAllFlags(evaluator: (flagName: string) => { defaultValue: any; effectiveValue: any }): void {
+  reEvaluateAllFlags(evaluator: (flagName: string) => { defaultValue: FlagValue; effectiveValue: FlagValue }): void {
     const flagNames = Object.keys(this.state.flags);
     
     flagNames.forEach(flagName => {

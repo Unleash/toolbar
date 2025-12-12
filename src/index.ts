@@ -1,15 +1,15 @@
 import { ToolbarStateManager } from './state';
-import { wrapUnleashClient } from './wrapper';
 import {
-  UnleashClient,
-  WrappedUnleashClient,
-  UnleashToolbarInstance,
+  FlagOverride,
+  IToolbarUI,
   InitToolbarOptions,
   ToolbarState,
-  FlagOverride,
+  UnleashClient,
   UnleashContext,
-  IToolbarUI,
+  UnleashToolbarInstance,
+  WrappedUnleashClient,
 } from './types';
+import { wrapUnleashClient } from './wrapper';
 
 /**
  * Main toolbar instance implementation
@@ -98,6 +98,7 @@ export function initUnleashToolbar(
 
   // Expose toolbar instance globally for debugging/advanced use
   if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).unleashToolbar = toolbar;
   }
 
@@ -106,6 +107,7 @@ export function initUnleashToolbar(
 
 // UMD global export
 if (typeof window !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).UnleashToolbar = {
     init: initUnleashToolbar,
   };
