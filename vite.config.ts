@@ -43,6 +43,28 @@ export default defineConfig({
       formats: ['es'],
       fileName: (format, entryName) => `${entryName}.${format}.js`
     },
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        passes: 3,
+        drop_console: false, // Keep console.error for debugging
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.debug', 'console.trace'],
+        pure_getters: true,
+        unsafe_arrows: true,
+        unsafe_methods: true,
+        unsafe_proto: true,
+        unsafe_regexp: true,
+      },
+      mangle: {
+        toplevel: true,
+        properties: false, // Don't mangle properties to avoid breaking lit-html
+      },
+      format: {
+        comments: false,
+        ecma: 2020,
+      },
+    },
     rollupOptions: {
       external: ['react', 'react/jsx-runtime', 'unleash-proxy-client'],
       output: {
