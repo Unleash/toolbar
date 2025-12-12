@@ -27,7 +27,8 @@
     "serve:example": "npx serve -p 3000 .",
     "serve:example:react": "cd examples/react && npm run dev",
     "serve:example:nextjs": "cd examples/nextjs && npm run dev",
-    "serve:example:angular": "cd examples/angular && npm start"
+    "serve:example:angular": "cd examples/angular && npm start",
+    "serve:example:vue": "cd examples/vue && npm run dev"
   },
   "keywords": [
     "unleash",
