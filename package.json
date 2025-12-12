@@ -57,5 +57,8 @@
     "unleash-proxy-client": "^3.4.1",
     "vite": "^7.2.7",
     "vite-plugin-dts": "^4.5.4"
+  },
+  "dependencies": {
+    "lit": "^3.3.1"
   }
 }

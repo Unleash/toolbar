@@ -1,13 +1,24 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
+import { copyFileSync } from 'fs';
 
 export default defineConfig({
   plugins: [
     dts({
       include: ['src/**/*.ts', 'src/**/*.tsx'],
       exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts']
-    })
+    }),
+    // Copy CSS file to dist folder
+    {
+      name: 'copy-css',
+      writeBundle() {
+        copyFileSync(
+          resolve(__dirname, 'src/toolbar.css'),
+          resolve(__dirname, 'dist/toolbar.css')
+        );
+      }
+    }
   ],
   build: {
     lib: {

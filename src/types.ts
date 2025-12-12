@@ -137,6 +137,15 @@ export type ToolbarEvent =
 export type ToolbarEventListener = (event: ToolbarEvent) => void;
 
 /**
+ * Toolbar UI interface (implemented by UI modules)
+ */
+export interface IToolbarUI {
+  show(): void;
+  hide(): void;
+  destroy(): void;
+}
+
+/**
  * Main toolbar instance API
  */
 export interface UnleashToolbarInstance {

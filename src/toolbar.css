@@ -25,6 +25,7 @@
 }
 
 /* Reset problematic inherited styles from page CSS */
+.unleash-toolbar-container,
 .unleash-toolbar button,
 .unleash-toolbar input {
   box-sizing: border-box;
@@ -45,10 +46,37 @@
   vertical-align: middle;
 }
 
-/* Floating toggle button (shown when toolbar is hidden) */
-.ut-toggle {
+/* Container for both toolbar and toggle button */
+.unleash-toolbar-container {
   all: initial;
   position: fixed;
+  z-index: 999998;
+}
+
+.unleash-toolbar-container.position-bottom {
+  bottom: 20px;
+  right: 20px;
+}
+
+.unleash-toolbar-container.position-top {
+  top: 20px;
+  right: 20px;
+}
+
+.unleash-toolbar-container.position-left {
+  left: 20px;
+  bottom: 20px;
+}
+
+.unleash-toolbar-container.position-right {
+  right: 20px;
+  bottom: 20px;
+}
+
+/* Floating toggle button (shown when toolbar is hidden) */
+.unleash-toolbar-container .ut-toggle {
+  all: initial;
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -58,46 +86,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999998;
   transition: all 0.3s ease;
   border: none;
   padding: 0;
 }
 
-.ut-toggle:hover {
+.unleash-toolbar-container .ut-toggle:hover {
   transform: scale(1.1);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-.ut-toggle img {
+.unleash-toolbar-container .ut-toggle img {
   width: 28px;
   height: 28px;
   object-fit: contain;
 }
 
-.ut-toggle.position-bottom {
-  bottom: 20px;
-  right: 20px;
-}
-
-.ut-toggle.position-top {
-  top: 20px;
-  right: 20px;
-}
-
-.ut-toggle.position-left {
-  left: 20px;
-  bottom: 20px;
-}
-
-.ut-toggle.position-right {
-  right: 20px;
-  bottom: 20px;
-}
-
-.unleash-toolbar {
+.unleash-toolbar-container .unleash-toolbar {
   all: initial;
-  position: fixed;
+  position: relative;
   font-family: var(--ut-font);
   font-size: 14px;
   line-height: 1.5;
@@ -105,43 +112,34 @@
   background: var(--ut-bg);
   border: 1px solid var(--ut-border);
   box-shadow: 0 4px 12px var(--ut-shadow);
-  z-index: 999999;
   box-sizing: border-box;
   max-height: 80vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   border-radius: 8px;
+  width: 400px;
 }
 
-.unleash-toolbar * {
+.unleash-toolbar-container .unleash-toolbar * {
   box-sizing: border-box;
 }
 
-.unleash-toolbar.position-bottom {
-  bottom: 20px;
-  right: 20px;
-  width: 400px;
-}
-
-.unleash-toolbar.position-top {
-  top: 20px;
-  right: 20px;
-  width: 400px;
-}
-
-.unleash-toolbar.position-left {
+/* Position-specific adjustments for left positioning */
+.unleash-toolbar-container.position-left {
+  top: 50%;
+  transform: translateY(-50%);
   left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 400px;
+  bottom: auto;
+  right: auto;
 }
 
-.unleash-toolbar.position-right {
-  right: 20px;
+.unleash-toolbar-container.position-right {
   top: 50%;
   transform: translateY(-50%);
-  width: 400px;
+  right: 20px;
+  bottom: auto;
+  left: auto;
 }
 
 .ut-header {
@@ -171,6 +169,18 @@
   height: 28px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.ut-title-main {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.ut-title-sub {
+  font-size: 11px;
+  opacity: 0.9;
+  margin-top: 1px;
 }
 
 .ut-actions {
@@ -572,6 +582,11 @@
   gap: 6px;
 }
 
+.ut-readonly-label {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
 .ut-input-with-reset {
   position: relative;
   display: block;
@@ -651,6 +666,11 @@
   border-color: var(--ut-primary);
 }
 
+.ut-input-readonly {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .ut-properties {
   display: flex;
   flex-direction: column;
@@ -689,6 +709,12 @@
   padding: 40px 20px;
   color: #636e72;
   font-size: 13px;
+}
+
+.ut-empty-properties {
+  font-size: 12px;
+  color: var(--ut-text);
+  margin-bottom: 8px;
 }
 
 .ut-stats {

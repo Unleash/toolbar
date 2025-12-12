@@ -1,6 +1,5 @@
 import { ToolbarStateManager } from './state';
 import { wrapUnleashClient } from './wrapper';
-import { ToolbarUI } from './ui';
 import {
   UnleashClient,
   WrappedUnleashClient,
@@ -10,6 +9,7 @@ import {
   FlagOverride,
   UnleashContext,
   ToolbarEventListener,
+  IToolbarUI,
 } from './types';
 
 /**
@@ -17,7 +17,7 @@ import {
  */
 class UnleashToolbar implements UnleashToolbarInstance {
   private stateManager: ToolbarStateManager;
-  private ui: ToolbarUI;
+  private ui: IToolbarUI | null;
   public readonly client: WrappedUnleashClient;
 
   constructor(
@@ -27,19 +27,31 @@ class UnleashToolbar implements UnleashToolbarInstance {
   ) {
     this.stateManager = stateManager;
     this.client = wrappedClient;
+    this.ui = null;
+    
+    // Initialize UI asynchronously to avoid SSR issues
+    this.initUI(stateManager, wrappedClient, options);
+  }
+
+  private async initUI(
+    stateManager: ToolbarStateManager,
+    wrappedClient: WrappedUnleashClient,
+    options: InitToolbarOptions
+  ) {
+    const { ToolbarUI } = await import('./ui');
     this.ui = new ToolbarUI(stateManager, wrappedClient, options);
   }
 
   show(): void {
-    this.ui.show();
+    if (this.ui) this.ui.show();
   }
 
   hide(): void {
-    this.ui.hide();
+    if (this.ui) this.ui.hide();
   }
 
   destroy(): void {
-    this.ui.destroy();
+    if (this.ui) this.ui.destroy();
     this.stateManager.clearPersistence();
   }
 
