@@ -11,6 +11,13 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 - **React Support**: Built-in hooks and provider component
 - **SDK Compatible**: Works with the Unleash JS SDK
 
+## Bundle Size
+
+The toolbar is optimized for minimal impact on your application:
+
+- **JavaScript**: 27.4 KB uncompressed / 8.8 KB gzipped
+- **CSS**: 10 KB uncompressed / 2.4 KB gzipped
+
 ## Installation
 
 ```bash
