@@ -107,15 +107,15 @@ import { ref, watch } from 'vue'
 import { useUnleash } from './composables/useUnleash'
 
 // Initialize Unleash with the composable
-const { client, isReady, updateTrigger } = useUnleash()
+const { unleashClient, isReady, updateTrigger } = useUnleash()
 
 // Reactive flag states
 const isEnabled = ref(false)
 
 // Evaluate flags
 const evaluateFlags = () => {
-  if (!client.value) return
-  isEnabled.value = client.value.isEnabled('my-feature')
+  if (!unleashClient.value) return
+  isEnabled.value = unleashClient.value.isEnabled('my-feature')
 }
 
 // Evaluate when ready
