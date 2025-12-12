@@ -93,13 +93,9 @@
 
     evaluateFeatures();
 
-    // Re-evaluate on toolbar events
-    window.unleashToolbar.subscribe((event) => {
-      if (event.type === 'flag_override_changed' || 
-          event.type === 'context_override_changed' ||
-          event.type === 'sdk_updated') {
-        evaluateFeatures();
-      }
+    // Listen to SDK 'update' events (triggered by SDK and toolbar changes)
+    client.on('update', () => {
+      evaluateFeatures();
     });
   </script>
 </body>

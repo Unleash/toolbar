@@ -8,14 +8,12 @@ import { UnleashService } from './unleash.service';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit, OnDestroy {
+export class App implements OnInit {
   isReady = false;
   newCheckout = false;
   darkMode = false;
   paymentProvider = '';
   premium = false;
-  
-  private unsubscribe?: () => void;
 
   constructor(
     private unleash: UnleashService,
@@ -28,19 +26,11 @@ export class App implements OnInit, OnDestroy {
     this.evaluateFlags();
     this.cdr.detectChanges();
 
-    // Subscribe to toolbar events
-    this.unsubscribe = this.unleash.subscribe((event: any) => {
-      if (event.type === 'flag_override_changed' || 
-          event.type === 'context_override_changed' ||
-          event.type === 'sdk_updated') {
-        this.evaluateFlags();
-        this.cdr.detectChanges();
-      }
+    // Listen to SDK 'update' events (triggered by SDK and toolbar changes)
+    this.unleash.onUpdate(() => {
+      this.evaluateFlags();
+      this.cdr.detectChanges();
     });
-  }
-
-  ngOnDestroy() {
-    this.unsubscribe?.();
   }
 
   private evaluateFlags() {

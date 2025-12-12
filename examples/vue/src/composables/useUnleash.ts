@@ -42,23 +42,11 @@ export function useUnleash() {
     await unleashClient.value.start()
     isReady.value = true
 
-    // Subscribe to toolbar events in development mode
-    if (import.meta.env.DEV && (window as any).unleashToolbar) {
-      unsubscribe = (window as any).unleashToolbar.subscribe((event: any) => {
-        if (
-          event.type === 'flag_override_changed' ||
-          event.type === 'context_override_changed' ||
-          event.type === 'sdk_updated'
-        ) {
-          // Trigger re-evaluation by incrementing the update trigger
-          updateTrigger.value++
-        }
-      })
-    }
-  })
-
-  onUnmounted(() => {
-    unsubscribe?.()
+    // Listen to SDK 'update' events (triggered by SDK and toolbar changes)
+    unleashClient.value?.on('update', () => {
+      // Trigger re-evaluation by incrementing the update trigger
+      updateTrigger.value++
+    })
   })
 
   return {

@@ -42,7 +42,7 @@ export class UnleashService {
     return this.client.getVariant(flagName);
   }
 
-  subscribe(callback: (event: any) => void): () => void {
-    return (window as any).unleashToolbar?.subscribe(callback);
+  onUpdate(callback: () => void): void {
+    this.client.on('update', callback);
   }
 }
