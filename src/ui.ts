@@ -22,6 +22,7 @@ export class ToolbarUI implements IToolbarUI {
   private themePreset: 'light' | 'dark';
   private customTheme?: InitToolbarOptions['theme'];
   private originalBaseContext: Partial<UnleashContext>;
+  private searchQuery: string = '';
 
   constructor(
     stateManager: ToolbarStateManager,
@@ -179,16 +180,38 @@ export class ToolbarUI implements IToolbarUI {
       `;
     }
 
+    // Filter flags based on search query
+    const filteredFlags = this.searchQuery
+      ? flagNames.filter(name => name.toLowerCase().includes(this.searchQuery.toLowerCase()))
+      : flagNames;
+
     return html`
       <div class="ut-tab-header">
+        <div class="ut-search-container">
+          <input
+            type="text"
+            class="ut-search-input"
+            placeholder="Search flags..."
+            .value=${this.searchQuery}
+            @input=${(e: Event) => this.updateSearch((e.target as HTMLInputElement).value)}
+          />
+        </div>
         <button class="ut-btn" @click=${() => this.stateManager.resetOverrides()}>
           Reset All Overrides
         </button>
       </div>
       <div class="ut-flag-list">
-        ${flagNames.map(name => this.renderFlagItem(name))}
+        ${filteredFlags.length > 0
+          ? filteredFlags.map(name => this.renderFlagItem(name))
+          : html`<div class="ut-empty">No flags match "${this.searchQuery}"</div>`
+        }
       </div>
     `;
+  }
+
+  private updateSearch(query: string): void {
+    this.searchQuery = query;
+    this.render();
   }
 
   private renderFlagItem(name: string) {

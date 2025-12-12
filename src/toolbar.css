@@ -113,7 +113,9 @@
   border: 1px solid var(--ut-border);
   box-shadow: 0 4px 12px var(--ut-shadow);
   box-sizing: border-box;
-  max-height: 80vh;
+  height: 700px;
+  min-height: 400px;
+  max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -307,8 +309,36 @@
   padding: 12px 16px;
   background: var(--ut-bg);
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 12px;
   flex-shrink: 0;
+}
+
+.ut-search-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.ut-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--ut-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--ut-bg);
+  color: var(--ut-text);
+  transition: border-color 0.2s;
+}
+
+.ut-search-input:focus {
+  outline: none;
+  border-color: var(--ut-primary);
+}
+
+.ut-search-input::placeholder {
+  color: var(--ut-text);
+  opacity: 0.5;
 }
 
 .ut-tab-header .ut-btn {
@@ -322,6 +352,8 @@
   font-family: inherit;
   transition: all 0.2s;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ut-tab-header .ut-btn:hover {
@@ -743,20 +775,44 @@
   margin-top: 4px;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - more visible */
 .ut-content::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .ut-content::-webkit-scrollbar-track {
   background: var(--ut-hover);
+  border-radius: 5px;
 }
 
 .ut-content::-webkit-scrollbar-thumb {
-  background: var(--ut-border);
-  border-radius: 4px;
+  background: var(--ut-primary);
+  border-radius: 5px;
+  border: 2px solid var(--ut-bg);
 }
 
 .ut-content::-webkit-scrollbar-thumb:hover {
-  background: #b2bec3;
+  background: var(--ut-primary);
+  opacity: 0.8;
+}
+
+/* Scrollbar for flag list */
+.ut-flag-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.ut-flag-list::-webkit-scrollbar-track {
+  background: var(--ut-hover);
+  border-radius: 5px;
+}
+
+.ut-flag-list::-webkit-scrollbar-thumb {
+  background: var(--ut-primary);
+  border-radius: 5px;
+  border: 2px solid var(--ut-bg);
+}
+
+.ut-flag-list::-webkit-scrollbar-thumb:hover {
+  background: var(--ut-primary);
+  opacity: 0.8;
 }
