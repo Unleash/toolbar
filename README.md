@@ -4,13 +4,12 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 
 ## Features
 
-- 🎯 **Flag Overrides**: Force boolean flags ON/OFF or override variant values
-- 🔧 **Context Overrides**: Modify userId, sessionId, environment, and custom properties
-- 💾 **Persistence**: Save overrides in memory, sessionStorage, or localStorage
-- 🎨 **Customizable UI**: Theming support and positioning options
-- ⚛️ **React Support**: Built-in hooks and provider component
-- 🔌 **SDK Compatible**: Works with Unleash JS, React, and Next.js SDKs
-- 🔍 **Search & Filter**: Quickly find flags in large projects
+- **Flag Overrides**: Force boolean flags ON/OFF or override variant values
+- **Context Overrides**: Modify userId, sessionId, environment, and custom properties
+- **Persistence**: Save overrides in memory, sessionStorage, or localStorage
+- **Customizable UI**: Theming support and positioning options
+- **React Support**: Built-in hooks and provider component
+- **SDK Compatible**: Works with the Unleash JS SDK
 
 ## Installation
 
@@ -165,7 +164,7 @@ interface InitToolbarOptions {
 ### Toolbar Instance
 
 ```typescript
-const toolbar = initUnleashSessionToolbar(options);
+const toolbar = window.unleashToolbar;
 
 // Show/hide the toolbar
 toolbar.show();
@@ -263,7 +262,6 @@ toolbar.subscribe((event) => {
 
 ### Flag List Tab
 
-- **Search**: Filter flags by name
 - **Override Controls**: Dropdown to set boolean or variant overrides
 - **Flag Info**: See default vs. effective values for each flag
 - **Quick Actions**: Reset individual flag overrides
@@ -271,14 +269,14 @@ toolbar.subscribe((event) => {
 ### Context Tab
 
 - **Standard Fields**: userId, sessionId, remoteAddress, environment, appName
-- **Custom Properties**: Add/edit/remove key-value pairs
+- **Custom Properties**: Edit or reset property values
 - **Live Updates**: Changes apply immediately to all evaluations
 
 ### Header Actions
 
 - **Reset Flags**: Clear all flag overrides
 - **Reset Context**: Clear all context overrides
-- **Close**: Hide the toolbar (call `toolbar.show()` to reopen)
+- **Close**: Hide the toolbar
 
 ## Theme Customization
 
