@@ -93,7 +93,6 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   private render(): void {
-    console.log('[Unleash Toolbar Lit] Rendering UI');
     const state = this.stateManager.getState();
     const flagNames = this.stateManager.getFlagNames();
     const isVisible = this.stateManager.getVisibility();

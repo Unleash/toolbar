@@ -61,7 +61,7 @@ class StorageAdapter {
       const data = storage.getItem(this.key);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.warn('[Unleash Toolbar] Failed to load state from storage:', error);
+      console.error('[Unleash Toolbar] Failed to load state from storage:', error);
       return null;
     }
   }
@@ -73,7 +73,7 @@ class StorageAdapter {
     try {
       storage.setItem(this.key, JSON.stringify(state));
     } catch (error) {
-      console.warn('[Unleash Toolbar] Failed to save state to storage:', error);
+      console.error('[Unleash Toolbar] Failed to save state to storage:', error);
     }
   }
 
@@ -84,7 +84,7 @@ class StorageAdapter {
     try {
       storage.removeItem(this.key);
     } catch (error) {
-      console.warn('[Unleash Toolbar] Failed to clear storage:', error);
+      console.error('[Unleash Toolbar] Failed to clear storage:', error);
     }
   }
 }
@@ -172,7 +172,7 @@ export class ToolbarStateManager {
         };
       } catch (error) {
         // If evaluation fails, keep existing data
-        console.warn(`[Unleash Toolbar] Failed to re-evaluate flag ${flagName}:`, error);
+        console.error(`[Unleash Toolbar] Failed to re-evaluate flag ${flagName}:`, error);
       }
     });
     

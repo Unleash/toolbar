@@ -138,7 +138,7 @@ export function wrapUnleashClient(
                         return { defaultValue, effectiveValue };
                     });
                 }).catch(err => {
-                    console.warn('[Unleash Toolbar] Failed to update context:', err);
+                    console.error('[Unleash Toolbar] Failed to update context:', err);
                 });
             }
         }
