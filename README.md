@@ -174,7 +174,7 @@ toolbar.hide();
 const state = toolbar.getState();
 
 // Set flag overrides
-toolbar.setFlagOverride('my-feature', { type: 'boolean', value: true });
+toolbar.setFlagOverride('my-feature', { type: 'flag', value: true });
 toolbar.setFlagOverride('my-variant', { type: 'variant', variantKey: 'variant-b' });
 toolbar.setFlagOverride('my-feature', null); // Clear override
 
