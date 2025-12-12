@@ -1,14 +1,15 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { UnleashClient } from 'unleash-proxy-client'
 import { initUnleashToolbar } from '@unleash/toolbar'
+import type { WrappedUnleashClient } from '@unleash/toolbar'
 import '@unleash/toolbar/toolbar.css'
 
 export function useUnleash() {
   const isReady = ref(false)
-  const unleashClient = ref<UnleashClient | null>(null)
+  const unleashClient = ref<UnleashClient | WrappedUnleashClient | null>(null)
   const updateTrigger = ref(0) // Used to trigger reactive updates
 
-  function initializeClient() {
+  function initializeClient(): UnleashClient | WrappedUnleashClient {
     const client = new UnleashClient({
       url: import.meta.env.VITE_UNLEASH_URL,
       clientKey: import.meta.env.VITE_UNLEASH_CLIENT_KEY,
@@ -39,7 +40,7 @@ export function useUnleash() {
 
   onMounted(async () => {
     unleashClient.value = initializeClient()
-    await unleashClient.value.start()
+    await unleashClient.value!.start()
     isReady.value = true
 
     // Listen to SDK 'update' events (triggered by SDK and toolbar changes)
