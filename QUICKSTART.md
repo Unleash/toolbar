@@ -12,7 +12,7 @@ npm install @unleash/toolbar
 
 ```typescript
 import { initUnleashToolbar } from '@unleash/toolbar';
-import '@unleash/toolbar/style.css';
+import '@unleash/toolbar/toolbar.css';
 import { UnleashClient } from 'unleash-proxy-client';
 
 // Initialize toolbar with new client - get wrapped client back immediately
@@ -29,6 +29,13 @@ await client.start();
 if (client.isEnabled('my-feature')) {
   // Feature is enabled
 }
+
+// Listen for changes (from toolbar or SDK updates)
+client.on('update', () => {
+  // Re-evaluate flags when overrides change
+  const newValue = client.isEnabled('my-feature');
+  updateUI(newValue);
+});
 ```
 
 ### 2. React
@@ -36,7 +43,7 @@ if (client.isEnabled('my-feature')) {
 ```tsx
 // In your root component (App.tsx or layout)
 import { UnleashToolbarProvider } from '@unleash/toolbar/react';
-import '@unleash/toolbar/style.css';
+import '@unleash/toolbar/toolbar.css';
 
 function App() {
   return (
@@ -75,7 +82,7 @@ export function Providers({ children }) {
 
 // app/layout.tsx
 import { Providers } from './providers';
-import '@unleash/toolbar/style.css';
+import '@unleash/toolbar/toolbar.css';
 
 export default function RootLayout({ children }) {
   return (
@@ -122,7 +129,6 @@ Look for the toolbar in the bottom-right corner (or wherever you positioned it).
 Switch to the "Context" tab to modify:
 - User ID
 - Session ID
-- Environment
 - Custom properties
 
 All changes apply immediately!
@@ -131,19 +137,35 @@ All changes apply immediately!
 
 ```typescript
 const client = initUnleashToolbar(new UnleashClient({...}), {
-  // Where to persist overrides
+  // Where to persist overrides (default: 'local')
   storageMode: 'local',  // 'memory' | 'session' | 'local'
   
-  // UI position
+  // Storage key (default: 'unleash-toolbar-state')
+  storageKey: 'my-custom-key',
+  
+  // UI position (default: 'bottom')
   position: 'bottom',  // 'top' | 'bottom' | 'left' | 'right'
   
-  // Start visible or hidden
+  // Start visible or hidden (default: true, respects persisted state)
   initiallyVisible: false,
   
-  // Custom colors
+  // Sort flags alphabetically (default: false)
+  sortAlphabetically: true,
+  
+  // Theme preset (default: 'light')
+  themePreset: 'dark',  // 'light' | 'dark'
+  
+  // Custom theme colors (overrides themePreset)
   theme: {
-    primaryColor: '#your-color'
-  }
+    primaryColor: '#your-color',
+    backgroundColor: '#your-bg',
+    textColor: '#your-text',
+    borderColor: '#your-border',
+    fontFamily: 'Your Font'
+  },
+  
+  // Custom container element (default: document.body)
+  container: document.getElementById('my-container')
 });
 ```
 
@@ -175,8 +197,8 @@ const client = initUnleashToolbar(new UnleashClient({...}), {
 ## Troubleshooting
 
 ### Toolbar Not Showing
-- Check that you imported the CSS: `import '@unleash/toolbar/style.css'`
-- Try calling `toolbar.show()`
+- Check that you imported the CSS: `import '@unleash/toolbar/toolbar.css'`
+- Try calling `window.unleashToolbar.show()`
 - Check browser console for errors
 
 ### Overrides Not Working
@@ -188,6 +210,7 @@ const client = initUnleashToolbar(new UnleashClient({...}), {
 - Ensure you're using hooks from `@unleash/toolbar/react`
 - Verify you wrapped your app with `<UnleashToolbarProvider>`
 - Check that the client is properly passed to the provider
+- The provider automatically listens to `client.on('update')` events
 
 ## Next Steps
 
