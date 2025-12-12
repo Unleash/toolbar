@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
-import { copyFileSync } from 'fs';
+import { copyFileSync, readFileSync, writeFileSync } from 'fs';
+import postcss from 'postcss';
+import cssnano from 'cssnano';
 
 export default defineConfig({
   plugins: [
@@ -9,14 +11,25 @@ export default defineConfig({
       include: ['src/**/*.ts', 'src/**/*.tsx'],
       exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts']
     }),
-    // Copy CSS file to dist folder
+    // Copy and minify CSS file to dist folder
     {
       name: 'copy-css',
-      writeBundle() {
-        copyFileSync(
-          resolve(__dirname, 'src/toolbar.css'),
-          resolve(__dirname, 'dist/toolbar.css')
-        );
+      async writeBundle() {
+        const cssPath = resolve(__dirname, 'src/toolbar.css');
+        const outputPath = resolve(__dirname, 'dist/toolbar.css');
+        const css = readFileSync(cssPath, 'utf-8');
+
+        // Minify CSS with cssnano (default preset)
+        const result = await postcss([
+          cssnano({
+            preset: ['default', {
+              discardComments: { removeAll: true },
+              normalizeWhitespace: true,
+            }]
+          })
+        ]).process(css, { from: cssPath, to: outputPath });
+
+        writeFileSync(outputPath, result.css);
       }
     }
   ],
