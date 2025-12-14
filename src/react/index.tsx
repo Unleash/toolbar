@@ -1,7 +1,7 @@
+import type { UnleashClient } from 'unleash-proxy-client';
 import { initUnleashToolbar } from '../index';
 import {
   InitToolbarOptions,
-  UnleashClient,
   UnleashVariant,
   WrappedUnleashClient,
 } from '../types';
