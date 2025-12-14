@@ -34,6 +34,7 @@ export default defineConfig({
     }
   ],
   build: {
+    target: 'esnext',
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
@@ -62,7 +63,7 @@ export default defineConfig({
       },
       format: {
         comments: false,
-        ecma: 2020,
+        ecma: 2022,
       },
     },
     rollupOptions: {
