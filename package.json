@@ -26,6 +26,9 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
     "serve:example": "npx serve -p 3000 .",
     "serve:example:react": "cd examples/react && npm run dev",
     "serve:example:nextjs": "cd examples/nextjs && npm run dev",
@@ -52,19 +55,26 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@types/eslint": "^9.6.1",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
+    "@vitest/coverage-v8": "^4.0.15",
     "cssnano": "^7.1.2",
     "eslint": "^9.39.2",
+    "jsdom": "^27.3.0",
     "postcss": "^8.5.6",
     "react": "^18.2.0",
+    "react-dom": "^18.3.1",
     "terser": "^5.44.1",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.49.0",
     "unleash-proxy-client": "^3.4.1",
     "vite": "^7.2.7",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.15"
   },
   "dependencies": {
     "lit": "^3.3.1"

@@ -6,6 +6,9 @@ dist/
 dist-ssr/
 *.tsbuildinfo
 
+# Test coverage
+coverage/
+
 # Environment and secrets
 .env
 .env.local
