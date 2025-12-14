@@ -1,7 +1,6 @@
+import type { UnleashClient } from 'unleash-proxy-client';
 import {
   FlagOverride,
-  UnleashClient,
-  UnleashContext,
   UnleashVariant,
   WrappedUnleashClient,
 } from './types';
@@ -20,23 +19,29 @@ export function wrapUnleashClient(
   }
 
     // Capture original base context before any updates
-    const originalBaseContext = baseClient.getContext ? baseClient.getContext() : {};
+    const originalBaseContext = baseClient.getContext();
 
-    const wrappedClient: WrappedUnleashClient = {
+    // Track user-registered 'update' listeners so we can trigger them on toolbar changes
+    const updateListeners = new Set<() => void>();
+
+    // Reference to the final proxy (will be assigned below)
+    let proxyClient: WrappedUnleashClient;
+
+    // Create a partial object with only the methods we're intercepting.
+    // The Proxy will handle all other methods by forwarding to baseClient.
+    const wrappedClient: Partial<WrappedUnleashClient> = {
         __original: baseClient,
         isEnabled,
         getVariant,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        on: undefined as any, // Will be set below
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        start: undefined as any, // Will be set below
+        getContext,
+        on: onHandler,
     };
 
     function isEnabled(
         toggleName: string
     ): boolean {
         // Get merged context (toolbar overrides are applied via updateContext)
-        const currentContext = baseClient.getContext ? baseClient.getContext() : {};
+        const currentContext = baseClient.getContext();
         const mergedContext = stateManager.getMergedContext(currentContext);
 
         // Get default evaluation from base client (uses client's global context)
@@ -56,7 +61,7 @@ export function wrapUnleashClient(
         toggleName: string
     ): UnleashVariant {
         // Get merged context (toolbar overrides are applied via updateContext)
-        const currentContext = baseClient.getContext ? baseClient.getContext() : {};
+        const currentContext = baseClient.getContext();
         const mergedContext = stateManager.getMergedContext(currentContext);
 
         // Get default evaluation from base client (uses client's global context)
@@ -72,41 +77,31 @@ export function wrapUnleashClient(
         return effectiveValue as UnleashVariant;
     }
 
-    // Wrap getContext if it exists
-    if (baseClient.getContext) {
-        wrappedClient.getContext = function (): UnleashContext {
-        const baseContext = baseClient.getContext!();
-        return stateManager.getMergedContext(baseContext);
-        };
-    }
 
-    // Wrap updateContext if it exists
-    if (baseClient.updateContext) {
-        wrappedClient.updateContext = async function (context: UnleashContext): Promise<void> {
-        await baseClient.updateContext!(context);
-        // Note: context overrides are separate and remain in effect
+    function getContext () {
+        const baseContext = baseClient.getContext();
+        const merged = stateManager.getMergedContext(baseContext);
+        // Ensure appName exists (required by SDK type)
+        return {
+            appName: '',
+            ...merged,
         };
-    }
+    };
 
-    // Track user-registered 'update' listeners so we can trigger them on toolbar changes
-    const updateListeners = new Set<() => void>();
 
     // Intercept on() method to capture 'update' listeners
-    wrappedClient.on = function (event: string, callback: () => void): void {
+    function onHandler (event: string, callback: () => void): WrappedUnleashClient {
         if (event === 'update') {
             updateListeners.add(callback);
         }
         // Forward to base client
         baseClient.on(event, callback);
-    };
-
-    // Forward start() to base client
-    wrappedClient.start = function (): Promise<void> {
-        return baseClient.start();
+        // Return the proxy for method chaining
+        return proxyClient;
     };
 
     // Helper to trigger all registered 'update' listeners
-    const triggerUpdateListeners = () => {
+    function triggerUpdateListeners() {
         updateListeners.forEach(callback => {
             try {
                 callback();
@@ -145,12 +140,11 @@ export function wrapUnleashClient(
             // Use original base context (not current client context which includes previous overrides)
             const mergedContext = stateManager.getMergedContext(originalBaseContext);
             
-            if (baseClient.updateContext) {
-                // Remove appName and environment - they are static and can't be updated
-                const { appName: _appName, environment: _environment, ...updatableContext } = mergedContext;
-                
-                // Update context on the client (this triggers SDK re-evaluation)
-                baseClient.updateContext(updatableContext).then(() => {
+            // Remove appName and environment - they are static and can't be updated
+            const { appName: _appName, environment: _environment, ...updatableContext } = mergedContext;
+
+            // Update context on the client (this triggers SDK re-evaluation)
+            baseClient.updateContext(updatableContext).then(() => {
                     // Re-evaluate all known flags after context update
                     stateManager.reEvaluateAllFlags((flagName) => {
                         // Get flag metadata to determine type
@@ -173,7 +167,6 @@ export function wrapUnleashClient(
                 }).catch(err => {
                     console.error('[Unleash Toolbar] Failed to update context:', err);
                 });
-            }
         }
 
         // Trigger user's 'update' listeners for flag override changes
@@ -184,7 +177,7 @@ export function wrapUnleashClient(
     });
 
     // Proxy all other methods and properties to the base client
-    return new Proxy(wrappedClient, {
+    proxyClient = new Proxy(wrappedClient, {
         get(target, prop) {
             if (prop in target) {
                 return Reflect.get(target, prop);
@@ -201,6 +194,8 @@ export function wrapUnleashClient(
             return true;
         },
     }) as WrappedUnleashClient;
+
+    return proxyClient;
 }
 
 

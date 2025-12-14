@@ -1,10 +1,10 @@
+import type { UnleashClient } from 'unleash-proxy-client';
 import { ToolbarStateManager } from './state';
 import {
   FlagOverride,
   IToolbarUI,
   InitToolbarOptions,
   ToolbarState,
-  UnleashClient,
   UnleashContext,
   UnleashToolbarInstance,
   WrappedUnleashClient,
@@ -14,7 +14,7 @@ import { wrapUnleashClient } from './wrapper';
 /**
  * Main toolbar instance implementation
  */
-class UnleashToolbar implements UnleashToolbarInstance {
+export class UnleashToolbar implements UnleashToolbarInstance {
   private stateManager: ToolbarStateManager;
   private ui: IToolbarUI | null;
   public readonly client: WrappedUnleashClient;
@@ -56,6 +56,10 @@ class UnleashToolbar implements UnleashToolbarInstance {
 
   getState(): ToolbarState {
     return this.stateManager.getState();
+  }
+
+  getFlagNames(): string[] {
+    return this.stateManager.getFlagNames();
   }
 
   setFlagOverride(name: string, override: FlagOverride | null): void {

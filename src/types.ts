@@ -2,6 +2,9 @@
  * Core type definitions for Unleash Session Override Toolbar
  */
 
+// Import actual SDK types for maximum compatibility
+import type { UnleashClient } from 'unleash-proxy-client';
+
 /**
  * Unleash context used for feature flag evaluation
  */
@@ -160,6 +163,7 @@ export interface UnleashToolbarInstance {
   destroy(): void;
   
   getState(): ToolbarState;
+  getFlagNames(): string[];
   
   setFlagOverride(name: string, override: FlagOverride | null): void;
   setContextOverride(context: Partial<UnleashContext>): void;
@@ -170,20 +174,8 @@ export interface UnleashToolbarInstance {
 }
 
 /**
- * Base Unleash client interface (simplified)
- */
-export interface UnleashClient {
-  isEnabled(toggleName: string): boolean;
-  getVariant(toggleName: string): UnleashVariant;
-  getContext?(): UnleashContext;
-  updateContext?(context: UnleashContext): Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  on(event: string, callback: (...args: any[]) => void): void;
-  start(): Promise<void>;
-}
-
-/**
- * Wrapped Unleash client with override support
+ * Wrapped Unleash client with override support.
+ * Extends the SDK client type and adds the __original property.
  */
 export interface WrappedUnleashClient extends UnleashClient {
   __original: UnleashClient;

@@ -149,7 +149,9 @@ export class ToolbarStateManager {
       };
     }
 
-    return defaultValue;
+    // Exhaustiveness check (for future-proofing)
+    const _exhaustive: never = override;
+    return _exhaustive;
   }
 
   /**
@@ -241,7 +243,7 @@ export class ToolbarStateManager {
       this.state.flags[name] = {
         flagType,
         lastDefaultValue: null,
-        lastEffectiveValue: null,
+        lastEffectiveValue: this.applyOverride(null, override),
         lastContext: null,
         override,
       };

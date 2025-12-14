@@ -37,7 +37,7 @@ export class ToolbarUI implements IToolbarUI {
     this.customTheme = options.theme;
     
     // Capture original base context before any overrides are applied
-    this.originalBaseContext = wrappedClient.__original?.getContext?.() || {};
+    this.originalBaseContext = wrappedClient.__original.getContext();
 
     // Initialize visibility from persisted state, or use initiallyVisible option
     const persistedVisibility = this.stateManager.getVisibility();
