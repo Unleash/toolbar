@@ -65,9 +65,9 @@ describe('ToolbarUI', () => {
     });
 
     it('should apply position class', () => {
-      new ToolbarUI(stateManager, wrappedClient, { container, position: 'top' });
+      new ToolbarUI(stateManager, wrappedClient, { container, position: 'top-right' });
 
-      const toolbar = container.querySelector('.position-top');
+      const toolbar = container.querySelector('.position-top-right');
       expect(toolbar).toBeTruthy();
     });
 

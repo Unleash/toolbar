@@ -41,7 +41,7 @@ const client = initUnleashToolbar(new UnleashClient({
   appName: 'my-app'
 }), {
   storageMode: 'local',
-  position: 'bottom',
+  position: 'bottom-right',
   initiallyVisible: true
 });
 
@@ -73,7 +73,7 @@ function App() {
       client={unleashClient}
       toolbarOptions={{
         storageMode: 'local',
-        position: 'bottom'
+        position: 'bottom-right'
       }}
     >
       <MyComponent />
@@ -154,8 +154,10 @@ interface InitToolbarOptions {
   // Storage key for persistence (default: 'unleash-toolbar-state')
   storageKey?: string;
   
-  // UI position (default: 'bottom')
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  // UI position (default: 'bottom-right')
+  // Corner positions: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  // Side positions (vertically centered): 'left' | 'right'
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left' | 'right';
   
   // Initial visibility (default: false, but respects persisted state if available)
   initiallyVisible?: boolean;

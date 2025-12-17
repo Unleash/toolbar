@@ -108,8 +108,8 @@ export interface InitToolbarOptions {
   theme?: ToolbarThemeOptions;
   /** Container element (default: document.body) */
   container?: HTMLElement | null;
-  /** Toolbar position (default: 'bottom') */
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  /** Toolbar position (default: 'bottom-right') */
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left' | 'right';
   /** Whether toolbar is visible on initialization (default: true, but respects persisted state if available) */
   initiallyVisible?: boolean;
   /** Sort flags alphabetically instead of by evaluation order (default: false) */

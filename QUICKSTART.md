@@ -143,8 +143,10 @@ const client = initUnleashToolbar(new UnleashClient({...}), {
   // Storage key (default: 'unleash-toolbar-state')
   storageKey: 'my-custom-key',
   
-  // UI position (default: 'bottom')
-  position: 'bottom',  // 'top' | 'bottom' | 'left' | 'right'
+  // UI position (default: 'bottom-right')
+  // Corner positions: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  // Side positions (vertically centered): 'left' | 'right'
+  position: 'bottom-right'
   
   // Start visible or hidden (default: true, respects persisted state)
   initiallyVisible: false,

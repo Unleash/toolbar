@@ -32,7 +32,7 @@ export class ToolbarUI implements IToolbarUI {
     options: InitToolbarOptions = {}
   ) {
     this.stateManager = stateManager;
-    this.position = options.position || 'bottom';
+    this.position = options.position || 'bottom-right';
     this.themePreset = options.themePreset || 'light';
     this.customTheme = options.theme;
     
