@@ -1,8 +1,8 @@
 import type { UnleashClient } from 'unleash-proxy-client';
-import { ToolbarStateManager } from '../state';
-import { ToolbarUI } from '../ui';
-import { WrappedUnleashClient } from '../types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ToolbarStateManager } from '../state';
+import type { WrappedUnleashClient } from '../types';
+import { ToolbarUI } from '../ui';
 
 describe('ToolbarUI', () => {
   let stateManager: ToolbarStateManager;
@@ -222,8 +222,8 @@ describe('ToolbarUI', () => {
     it('should switch to context tab when clicked', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
@@ -299,7 +299,7 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       const offButton = Array.from(container.querySelectorAll('.ut-toggle-btn')).find(
-        (btn) => btn.textContent === 'OFF'
+        (btn) => btn.textContent === 'OFF',
       ) as HTMLElement;
       offButton?.click();
 
@@ -314,7 +314,7 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       const defaultButton = Array.from(container.querySelectorAll('.ut-toggle-btn')).find(
-        (btn) => btn.textContent === '—'
+        (btn) => btn.textContent === '—',
       ) as HTMLElement;
       defaultButton?.click();
 
@@ -328,7 +328,7 @@ describe('ToolbarUI', () => {
         'variant',
         { name: 'control', enabled: true },
         { name: 'control', enabled: true },
-        {}
+        {},
       );
 
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
@@ -336,7 +336,7 @@ describe('ToolbarUI', () => {
       // Just verify the flag is rendered
       const flagItem = container.querySelector('.ut-flag-item');
       expect(flagItem).toBeTruthy();
-      
+
       const flagName = container.querySelector('.ut-flag-name');
       expect(flagName?.textContent).toBe('test-flag');
     });
@@ -347,7 +347,7 @@ describe('ToolbarUI', () => {
         'variant',
         { name: 'control', enabled: true },
         { name: 'control', enabled: true },
-        {}
+        {},
       );
 
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
@@ -363,7 +363,7 @@ describe('ToolbarUI', () => {
         'variant',
         { name: 'control', enabled: true },
         { name: 'control', enabled: true },
-        {}
+        {},
       );
 
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
@@ -381,7 +381,7 @@ describe('ToolbarUI', () => {
         'variant',
         { name: 'control', enabled: true },
         { name: 'control', enabled: true },
-        {}
+        {},
       );
       stateManager.setFlagOverride('test-flag', { type: 'variant', variantKey: 'treatment' });
 
@@ -398,7 +398,7 @@ describe('ToolbarUI', () => {
         'variant',
         { name: 'control', enabled: true },
         { name: 'control', enabled: true },
-        {}
+        {},
       );
       stateManager.setFlagOverride('test-flag', { type: 'variant', variantKey: 'control' });
 
@@ -417,7 +417,7 @@ describe('ToolbarUI', () => {
         'variant',
         { name: 'control', enabled: true },
         { name: 'control', enabled: true },
-        {}
+        {},
       );
       stateManager.setFlagOverride('test-flag', { type: 'variant', variantKey: 'treatment' });
 
@@ -438,8 +438,8 @@ describe('ToolbarUI', () => {
 
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
-      const resetButton = Array.from(container.querySelectorAll('.ut-btn')).find(
-        (btn) => btn.textContent?.includes('Reset All Overrides')
+      const resetButton = Array.from(container.querySelectorAll('.ut-btn')).find((btn) =>
+        btn.textContent?.includes('Reset All Overrides'),
       ) as HTMLElement;
       resetButton?.click();
 
@@ -502,13 +502,13 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
-      const userIdLabel = Array.from(container.querySelectorAll('.ut-label')).find(
-        (label) => label.textContent?.includes('User ID')
+      const userIdLabel = Array.from(container.querySelectorAll('.ut-label')).find((label) =>
+        label.textContent?.includes('User ID'),
       );
       expect(userIdLabel).toBeTruthy();
     });
@@ -527,8 +527,8 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, clientWithContext, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
@@ -541,8 +541,8 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
@@ -554,12 +554,14 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
-      const inputs = container.querySelectorAll('.ut-input:not(.ut-input-readonly)') as NodeListOf<HTMLInputElement>;
+      const inputs = container.querySelectorAll(
+        '.ut-input:not(.ut-input-readonly)',
+      ) as NodeListOf<HTMLInputElement>;
       const userIdInput = inputs[0];
       userIdInput.value = 'new-user';
       userIdInput.dispatchEvent(new Event('input'));
@@ -574,8 +576,8 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
@@ -589,8 +591,8 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
@@ -607,13 +609,13 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
-      const resetButton = Array.from(container.querySelectorAll('.ut-btn')).find(
-        (btn) => btn.textContent?.includes('Reset All Context')
+      const resetButton = Array.from(container.querySelectorAll('.ut-btn')).find((btn) =>
+        btn.textContent?.includes('Reset All Context'),
       ) as HTMLElement;
       resetButton?.click();
 
@@ -646,8 +648,8 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, clientWithProps, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
@@ -678,12 +680,14 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, clientWithProps, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 
-      const propertyInputs = container.querySelectorAll('.ut-property-row .ut-input') as NodeListOf<HTMLInputElement>;
+      const propertyInputs = container.querySelectorAll(
+        '.ut-property-row .ut-input',
+      ) as NodeListOf<HTMLInputElement>;
       const input = propertyInputs[0];
       input.value = 'modified';
       input.dispatchEvent(new Event('input'));
@@ -696,8 +700,8 @@ describe('ToolbarUI', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       // Switch to context tab
-      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find(
-        (tab) => tab.textContent?.includes('Context')
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
       ) as HTMLElement;
       contextTab?.click();
 

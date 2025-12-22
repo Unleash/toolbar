@@ -81,7 +81,7 @@ describe('ToolbarStateManager', () => {
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'sdk_updated',
-        })
+        }),
       );
     });
 
@@ -132,12 +132,18 @@ describe('ToolbarStateManager', () => {
           type: 'flag_override_changed',
           name: 'feature1',
           override: { type: 'flag', value: false },
-        })
+        }),
       );
     });
 
     it('should set a variant override', () => {
-      stateManager.recordEvaluation('feature2', 'variant', { name: 'control', enabled: false }, { name: 'control', enabled: false }, {});
+      stateManager.recordEvaluation(
+        'feature2',
+        'variant',
+        { name: 'control', enabled: false },
+        { name: 'control', enabled: false },
+        {},
+      );
 
       const override: FlagOverride = { type: 'variant', variantKey: 'blue' };
       stateManager.setFlagOverride('feature2', override);
@@ -241,7 +247,7 @@ describe('ToolbarStateManager', () => {
         expect.objectContaining({
           type: 'context_override_changed',
           contextOverrides: context,
-        })
+        }),
       );
     });
 
@@ -293,7 +299,7 @@ describe('ToolbarStateManager', () => {
         expect.objectContaining({
           type: 'context_override_changed',
           contextOverrides: {},
-        })
+        }),
       );
     });
   });
@@ -314,7 +320,10 @@ describe('ToolbarStateManager', () => {
     it('should prioritize overrides over base context', () => {
       stateManager.setContextOverride({ userId: 'override-user' });
 
-      const merged = stateManager.getMergedContext({ userId: 'base-user', sessionId: 'session123' });
+      const merged = stateManager.getMergedContext({
+        userId: 'base-user',
+        sessionId: 'session123',
+      });
 
       expect(merged.userId).toBe('override-user');
       expect(merged.sessionId).toBe('session123');
@@ -385,14 +394,14 @@ describe('ToolbarStateManager', () => {
           type: 'flag_override_changed',
           name: 'flag1',
           override: null,
-        })
+        }),
       );
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'flag_override_changed',
           name: 'flag2',
           override: null,
-        })
+        }),
       );
     });
 
@@ -429,7 +438,7 @@ describe('ToolbarStateManager', () => {
         expect.objectContaining({
           type: 'context_override_changed',
           contextOverrides: {},
-        })
+        }),
       );
     });
 
@@ -449,8 +458,8 @@ describe('ToolbarStateManager', () => {
       stateManager.recordEvaluation('flag2', 'flag', false, false, {});
 
       const evaluator = vi.fn((flagName: string) => ({
-        defaultValue: flagName === 'flag1' ? false : true,
-        effectiveValue: flagName === 'flag1' ? false : true,
+        defaultValue: flagName !== 'flag1',
+        effectiveValue: flagName !== 'flag1',
       }));
 
       stateManager.reEvaluateAllFlags(evaluator);
@@ -471,7 +480,7 @@ describe('ToolbarStateManager', () => {
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'sdk_updated',
-        })
+        }),
       );
     });
 

@@ -1,4 +1,4 @@
-import {
+import type {
   FlagMetadata,
   FlagOverride,
   FlagValue,
@@ -38,12 +38,12 @@ class EventEmitter {
 class StorageAdapter {
   constructor(
     private mode: StorageMode,
-    private key: string
+    private key: string,
   ) {}
 
   private getStorage(): Storage | null {
     if (typeof window === 'undefined') return null;
-    
+
     switch (this.mode) {
       case 'local':
         return window.localStorage;
@@ -99,7 +99,11 @@ export class ToolbarStateManager {
   private storage: StorageAdapter;
   private sortAlphabetically: boolean;
 
-  constructor(storageMode: StorageMode = 'local', storageKey: string = 'unleash-toolbar-state', sortAlphabetically: boolean = false) {
+  constructor(
+    storageMode: StorageMode = 'local',
+    storageKey: string = 'unleash-toolbar-state',
+    sortAlphabetically: boolean = false,
+  ) {
     this.eventEmitter = new EventEmitter();
     this.storage = new StorageAdapter(storageMode, storageKey);
     this.sortAlphabetically = sortAlphabetically;
@@ -125,7 +129,7 @@ export class ToolbarStateManager {
    */
   private applyOverride(
     defaultValue: boolean | UnleashVariant | null,
-    override: FlagOverride | null
+    override: FlagOverride | null,
   ): boolean | UnleashVariant | null {
     if (!override) return defaultValue;
 
@@ -157,16 +161,18 @@ export class ToolbarStateManager {
   /**
    * Re-evaluate all known flags (used when SDK configuration updates)
    */
-  reEvaluateAllFlags(evaluator: (flagName: string) => { defaultValue: FlagValue; effectiveValue: FlagValue }): void {
+  reEvaluateAllFlags(
+    evaluator: (flagName: string) => { defaultValue: FlagValue; effectiveValue: FlagValue },
+  ): void {
     const flagNames = Object.keys(this.state.flags);
-    
-    flagNames.forEach(flagName => {
+
+    flagNames.forEach((flagName) => {
       const existing = this.state.flags[flagName];
       if (!existing) return;
-      
+
       try {
         const { defaultValue, effectiveValue } = evaluator(flagName);
-        
+
         // Update flag metadata with new default value
         this.state.flags[flagName] = {
           ...existing,
@@ -178,9 +184,9 @@ export class ToolbarStateManager {
         console.error(`[Unleash Toolbar] Failed to re-evaluate flag ${flagName}:`, error);
       }
     });
-    
+
     this.persist();
-    
+
     this.eventEmitter.emit({
       type: 'sdk_updated',
       timestamp: Date.now(),
@@ -209,11 +215,11 @@ export class ToolbarStateManager {
     flagType: 'flag' | 'variant',
     defaultValue: boolean | UnleashVariant | null,
     effectiveValue: boolean | UnleashVariant | null,
-    context: UnleashContext
+    context: UnleashContext,
   ): void {
     const existing = this.state.flags[name];
     const isNewFlag = !existing;
-    
+
     this.state.flags[name] = {
       flagType,
       lastDefaultValue: defaultValue,
@@ -223,7 +229,7 @@ export class ToolbarStateManager {
     };
 
     this.persist();
-    
+
     // Emit event only for new flags to trigger UI update
     if (isNewFlag) {
       this.eventEmitter.emit({
@@ -249,7 +255,7 @@ export class ToolbarStateManager {
       };
     } else {
       this.state.flags[name].override = override;
-      
+
       // Recalculate effective value based on new override
       const defaultValue = this.state.flags[name].lastDefaultValue;
       this.state.flags[name].lastEffectiveValue = this.applyOverride(defaultValue, override);
@@ -295,7 +301,7 @@ export class ToolbarStateManager {
   removeContextOverride(fieldName: keyof UnleashContext): void {
     const newOverrides = { ...this.state.contextOverrides };
     delete newOverrides[fieldName];
-    
+
     // Replace entire context overrides object
     this.state.contextOverrides = newOverrides;
     this.persist();
@@ -326,11 +332,11 @@ export class ToolbarStateManager {
   resetOverrides(): void {
     Object.keys(this.state.flags).forEach((name) => {
       this.state.flags[name].override = null;
-      
+
       // Recalculate effective value (will match default)
       const defaultValue = this.state.flags[name].lastDefaultValue;
       this.state.flags[name].lastEffectiveValue = defaultValue;
-      
+
       // Emit event for each flag override removal
       this.eventEmitter.emit({
         type: 'flag_override_changed',

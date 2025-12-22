@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UnleashClient } from 'unleash-proxy-client';
-import { UnleashToolbar, initUnleashToolbar } from '../index';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { initUnleashToolbar, type UnleashToolbar } from '../index';
 
 describe('initUnleashToolbar', () => {
   let mockClient: UnleashClient;
 
   function getToolbar(): UnleashToolbar {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: no type for window
     return (window as any).unleashToolbar;
   }
 
@@ -32,7 +32,7 @@ describe('initUnleashToolbar', () => {
     } as unknown as UnleashClient;
 
     // Clear window.unleashToolbar
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: no type for window
     delete (window as any).unleashToolbar;
   });
 
@@ -211,7 +211,7 @@ describe('initUnleashToolbar', () => {
       const wrapped = initUnleashToolbar(mockClient);
 
       const toolbar = getToolbar();
-      
+
       expect(toolbar.client).toBe(wrapped);
     });
   });
@@ -262,7 +262,7 @@ describe('initUnleashToolbar', () => {
 
       // First initialization
       let wrapped = initUnleashToolbar(mockClient, { storageKey });
-      
+
       const toolbar = getToolbar();
 
       toolbar.setFlagOverride('persistentFlag', { type: 'flag', value: true });
@@ -287,7 +287,7 @@ describe('initUnleashToolbar', () => {
 
   describe('UMD global export', () => {
     it('should expose UnleashToolbar.init on window', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: no type for window
       const umdExport = (window as any).UnleashToolbar;
 
       expect(umdExport).toBeDefined();
@@ -295,9 +295,9 @@ describe('initUnleashToolbar', () => {
     });
 
     it('should allow initialization via global', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: no type for window
       const umdExport = (window as any).UnleashToolbar;
-      
+
       const wrapped = umdExport.init(mockClient);
 
       expect(wrapped).toBeDefined();
@@ -320,7 +320,7 @@ describe('initUnleashToolbar', () => {
 
     it('should handle multiple toolbar instances with different storage keys', () => {
       initUnleashToolbar(mockClient, { storageKey: 'toolbar1' });
-      
+
       // Create another instance (overwrites window.unleashToolbar)
       initUnleashToolbar(mockClient, { storageKey: 'toolbar2' });
 

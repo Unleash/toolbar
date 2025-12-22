@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UnleashClient } from 'unleash-proxy-client';
-import { isWrappedClient, unwrapUnleashClient, wrapUnleashClient } from '../wrapper';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToolbarStateManager } from '../state';
 import type { UnleashVariant } from '../types';
+import { isWrappedClient, unwrapUnleashClient, wrapUnleashClient } from '../wrapper';
 
 describe('wrapUnleashClient', () => {
   let mockClient: UnleashClient;
@@ -69,11 +69,11 @@ describe('wrapUnleashClient', () => {
     });
 
     it('should proxy property access to base client', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: creating a custom property on mock client
       (mockClient as any).customProperty = 'test-value';
       const wrapped = wrapUnleashClient(mockClient, stateManager);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: accessing custom property on wrapped client
       expect((wrapped as any).customProperty).toBe('test-value');
     });
   });
@@ -210,8 +210,7 @@ describe('wrapUnleashClient', () => {
       const wrapped = wrapUnleashClient(mockClient, stateManager);
       const errorListener = vi.fn();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      wrapped.on('error' as any, errorListener);
+      wrapped.on('error', errorListener);
 
       expect(mockClient.on).toHaveBeenCalledWith('error', errorListener);
     });
@@ -234,7 +233,7 @@ describe('wrapUnleashClient', () => {
 
       // Wait for async context update to complete
       stateManager.setContextOverride({ userId: 'test-user' });
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(userListener).toHaveBeenCalled();
     });
@@ -283,7 +282,7 @@ describe('wrapUnleashClient', () => {
 
       // Get the SDK update callback
       const sdkUpdateCallback = (mockClient.on as ReturnType<typeof vi.fn>).mock.calls.find(
-        call => call[0] === 'update'
+        (call) => call[0] === 'update',
       )?.[1];
 
       // Change mock return values to simulate SDK config change
@@ -306,7 +305,7 @@ describe('wrapUnleashClient', () => {
       wrapped.getVariant('variantFlag');
 
       const sdkUpdateCallback = (mockClient.on as ReturnType<typeof vi.fn>).mock.calls.find(
-        call => call[0] === 'update'
+        (call) => call[0] === 'update',
       )?.[1];
 
       // Change variant
@@ -330,12 +329,12 @@ describe('wrapUnleashClient', () => {
       stateManager.setContextOverride({ userId: 'override-user' });
 
       // Wait for async context update
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockClient.updateContext).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'override-user',
-        })
+        }),
       );
     });
 
@@ -345,13 +344,11 @@ describe('wrapUnleashClient', () => {
 
       stateManager.setContextOverride({
         userId: 'user123',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        appName: 'myApp' as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        environment: 'production' as any,
+        appName: 'myApp',
+        environment: 'production',
       });
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const updateCall = (mockClient.updateContext as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
       expect(updateCall).toMatchObject({ userId: 'user123' });
@@ -369,7 +366,7 @@ describe('wrapUnleashClient', () => {
 
       stateManager.setContextOverride({ userId: 'different-user' });
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const metadata = stateManager.getFlagMetadata('contextSensitiveFlag');
       expect(metadata?.lastDefaultValue).toBe(true);
@@ -378,7 +375,7 @@ describe('wrapUnleashClient', () => {
     it('should handle updateContext failure gracefully', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       (mockClient.updateContext as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Update failed')
+        new Error('Update failed'),
       );
 
       const wrapped = wrapUnleashClient(mockClient, stateManager);
@@ -386,11 +383,11 @@ describe('wrapUnleashClient', () => {
 
       stateManager.setContextOverride({ userId: 'test' });
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Failed to update context'),
-        expect.any(Error)
+        expect.any(Error),
       );
 
       consoleErrorSpy.mockRestore();
@@ -406,7 +403,7 @@ describe('wrapUnleashClient', () => {
 
       // Simulate SDK update
       const sdkUpdateCallback = (mockClient.on as ReturnType<typeof vi.fn>).mock.calls.find(
-        call => call[0] === 'update'
+        (call) => call[0] === 'update',
       )?.[1];
       (mockClient.isEnabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
       sdkUpdateCallback?.();
@@ -474,7 +471,6 @@ describe('wrapUnleashClient', () => {
 
       expect(result.payload).toEqual({ type: 'json', value: '{"key":"value"}' });
     });
-
   });
 });
 

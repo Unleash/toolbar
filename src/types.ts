@@ -62,15 +62,15 @@ export interface ToolbarState {
 
 /**
  * Storage mode options
- * 
+ *
  * - **local**: Persists across browser tabs and page reloads. Best for development
  *   as overrides remain active across the entire browser session and even after
  *   closing/reopening the browser. (DEFAULT)
- * 
+ *
  * - **session**: Persists only within the current browser tab. Overrides survive
  *   page reloads but are lost when the tab is closed. Useful when testing different
  *   configurations in different tabs without interference.
- * 
+ *
  * - **memory**: No persistence - overrides lost on page reload. Useful for
  *   quick temporary testing or when you need complete isolation between page loads.
  *   Also appropriate for strict security/privacy requirements where no data should
@@ -157,18 +157,18 @@ export interface IToolbarUI {
 export interface UnleashToolbarInstance {
   // Wrapped client is exposed for direct use
   readonly client: WrappedUnleashClient;
-  
+
   show(): void;
   hide(): void;
   destroy(): void;
-  
+
   getState(): ToolbarState;
   getFlagNames(): string[];
-  
+
   setFlagOverride(name: string, override: FlagOverride | null): void;
   setContextOverride(context: Partial<UnleashContext>): void;
   removeContextOverride(fieldName: keyof UnleashContext): void;
-  
+
   resetOverrides(): void;
   resetContextOverrides(): void;
 }

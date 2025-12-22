@@ -1,13 +1,13 @@
-import { ToolbarStateManager } from './state';
-import {
+import { html, render } from 'lit-html';
+import type { ToolbarStateManager } from './state';
+import type {
   FlagValue,
-  IToolbarUI,
   InitToolbarOptions,
+  IToolbarUI,
   ToolbarState,
   UnleashContext,
-  WrappedUnleashClient
+  WrappedUnleashClient,
 } from './types';
-import { html, render } from 'lit-html';
 
 // Unleash logo from CDN
 const UNLEASH_LOGO = 'https://cdn.getunleash.io/docs-assets/unleash_logo_icon.svg';
@@ -29,20 +29,21 @@ export class ToolbarUI implements IToolbarUI {
   constructor(
     stateManager: ToolbarStateManager,
     wrappedClient: WrappedUnleashClient,
-    options: InitToolbarOptions = {}
+    options: InitToolbarOptions = {},
   ) {
     this.stateManager = stateManager;
     this.position = options.position || 'bottom-right';
     this.themePreset = options.themePreset || 'light';
     this.customTheme = options.theme;
-    
+
     // Capture original base context before any overrides are applied
     this.originalBaseContext = wrappedClient.__original.getContext();
 
     // Initialize visibility from persisted state, or use initiallyVisible option
     const persistedVisibility = this.stateManager.getVisibility();
-    const isVisible = persistedVisibility !== undefined ? persistedVisibility : (options.initiallyVisible ?? false);
-    
+    const isVisible =
+      persistedVisibility !== undefined ? persistedVisibility : (options.initiallyVisible ?? false);
+
     // Persist the initial visibility if not already set
     if (persistedVisibility === undefined) {
       this.stateManager.setVisibility(isVisible);
@@ -73,10 +74,13 @@ export class ToolbarUI implements IToolbarUI {
     if (!this.customTheme) return;
 
     const style = element.style;
-    if (this.customTheme.primaryColor) style.setProperty('--ut-primary', this.customTheme.primaryColor);
-    if (this.customTheme.backgroundColor) style.setProperty('--ut-bg', this.customTheme.backgroundColor);
+    if (this.customTheme.primaryColor)
+      style.setProperty('--ut-primary', this.customTheme.primaryColor);
+    if (this.customTheme.backgroundColor)
+      style.setProperty('--ut-bg', this.customTheme.backgroundColor);
     if (this.customTheme.textColor) style.setProperty('--ut-text', this.customTheme.textColor);
-    if (this.customTheme.borderColor) style.setProperty('--ut-border', this.customTheme.borderColor);
+    if (this.customTheme.borderColor)
+      style.setProperty('--ut-border', this.customTheme.borderColor);
     if (this.customTheme.fontFamily) style.setProperty('--ut-font', this.customTheme.fontFamily);
   }
 
@@ -183,7 +187,7 @@ export class ToolbarUI implements IToolbarUI {
 
     // Filter flags based on search query
     const filteredFlags = this.searchQuery
-      ? flagNames.filter(name => name.toLowerCase().includes(this.searchQuery.toLowerCase()))
+      ? flagNames.filter((name) => name.toLowerCase().includes(this.searchQuery.toLowerCase()))
       : flagNames;
 
     return html`
@@ -202,9 +206,10 @@ export class ToolbarUI implements IToolbarUI {
         </button>
       </div>
       <div class="ut-flag-list">
-        ${filteredFlags.length > 0
-          ? filteredFlags.map(name => this.renderFlagItem(name))
-          : html`<div class="ut-empty">No flags match "${this.searchQuery}"</div>`
+        ${
+          filteredFlags.length > 0
+            ? filteredFlags.map((name) => this.renderFlagItem(name))
+            : html`<div class="ut-empty">No flags match "${this.searchQuery}"</div>`
         }
       </div>
     `;
@@ -222,7 +227,7 @@ export class ToolbarUI implements IToolbarUI {
     // Use the explicitly stored flag type
     const isVariant = metadata.flagType === 'variant';
     const hasOverride = metadata.override !== null;
-    
+
     // Determine current state for toggle
     let toggleState = 'default';
     if (hasOverride && metadata.override?.type === 'flag') {
@@ -240,17 +245,23 @@ export class ToolbarUI implements IToolbarUI {
               <div class="ut-flag-default-value" title="Default value from Unleash">
                 ${this.renderValueBadge(metadata.lastDefaultValue)}
               </div>
-              ${hasOverride ? html`
+              ${
+                hasOverride
+                  ? html`
                 <span class="ut-override-indicator" title="Override value (overriding the default)">
                   → ${this.renderValueBadge(metadata.lastEffectiveValue)}
                 </span>
-              ` : null}
+              `
+                  : null
+              }
             </div>
           </div>
         </div>
         
         <div class="ut-flag-control">
-          ${!isVariant ? html`
+          ${
+            !isVariant
+              ? html`
             <div class="ut-toggle-group">
               <button 
                 class=${`ut-toggle-btn ${toggleState === 'off' ? 'active' : ''}`}
@@ -268,9 +279,12 @@ export class ToolbarUI implements IToolbarUI {
                 title="Force this flag to ON"
               >ON</button>
             </div>
-          ` : html`
+          `
+              : html`
             <div class="ut-variant-control">
-              ${hasOverride && metadata.override?.type === 'variant' ? html`
+              ${
+                hasOverride && metadata.override?.type === 'variant'
+                  ? html`
                 <input 
                   type="text" 
                   class="ut-input-small" 
@@ -284,15 +298,18 @@ export class ToolbarUI implements IToolbarUI {
                   @click=${() => this.toggleVariantOverride(name)}
                   title="Clear variant override"
                 >Clear Override</button>
-              ` : html`
+              `
+                  : html`
                 <button 
                   class="ut-btn-small" 
                   @click=${() => this.toggleVariantOverride(name)}
                   title="Set a variant override"
                 >Override Variant</button>
-              `}
+              `
+              }
             </div>
-          `}
+          `
+          }
         </div>
       </div>
     `;
@@ -320,7 +337,7 @@ export class ToolbarUI implements IToolbarUI {
 
   private toggleVariantOverride(flagName: string): void {
     const metadata = this.stateManager.getFlagMetadata(flagName);
-    
+
     if (metadata?.override) {
       // Clear override
       this.stateManager.setFlagOverride(flagName, null);
@@ -334,18 +351,29 @@ export class ToolbarUI implements IToolbarUI {
     this.stateManager.setFlagOverride(flagName, { type: 'variant', variantKey });
   }
 
-  private isFieldOverridden(fieldName: string, baseContext: Partial<UnleashContext>, contextOverrides: Partial<UnleashContext>): boolean {
+  private isFieldOverridden(
+    fieldName: string,
+    baseContext: Partial<UnleashContext>,
+    contextOverrides: Partial<UnleashContext>,
+  ): boolean {
     if (fieldName === 'properties') {
       return false; // Handle properties separately
     }
     const baseValue = baseContext[fieldName as keyof UnleashContext];
     const overrideValue = contextOverrides[fieldName as keyof UnleashContext];
-    
+
     // Only consider it overridden if there's an override AND it differs from base
     return overrideValue !== undefined && overrideValue !== baseValue;
   }
 
-  private renderContextField(label: string, fieldName: string, placeholder: string, value: string, isOverridden: boolean, readonly = false) {
+  private renderContextField(
+    label: string,
+    fieldName: string,
+    placeholder: string,
+    value: string,
+    isOverridden: boolean,
+    readonly = false,
+  ) {
     return html`
       <div class="ut-form-group">
         <label class="ut-label">
@@ -361,13 +389,17 @@ export class ToolbarUI implements IToolbarUI {
             ?readonly=${readonly}
             title=${readonly ? 'This context field is static and cannot be modified.' : ''}
           />
-          ${isOverridden && !readonly ? html`
+          ${
+            isOverridden && !readonly
+              ? html`
             <button 
               class="ut-reset-field" 
               @click=${() => this.resetContextField(fieldName)}
               title="Reset to original value"
             >↻</button>
-          ` : null}
+          `
+              : null
+          }
         </div>
       </div>
     `;
@@ -385,23 +417,29 @@ export class ToolbarUI implements IToolbarUI {
     // Use original base context (not current client context which includes overrides)
     const baseContext = this.originalBaseContext;
     const mergedContext = { ...baseContext, ...contextOverrides };
-    
+
     // Standard context fields that should not appear in custom properties
-    const standardFields = ['userId', 'sessionId', 'remoteAddress', 'environment', 'appName', 'properties'];
-    
+    const standardFields = [
+      'userId',
+      'sessionId',
+      'remoteAddress',
+      'environment',
+      'appName',
+      'properties',
+    ];
+
     // Merge properties and exclude any that are standard fields
     const baseProperties = baseContext.properties || {};
     const overrideProperties = contextOverrides.properties || {};
     const mergedProperties = { ...baseProperties, ...overrideProperties };
-    
+
     // Filter out standard fields and show only non-empty properties
-    const customPropertiesArray = Object.entries(mergedProperties)
-      .filter(([key, value]) => {
-        if (standardFields.includes(key)) return false;
-        // Only show properties that have a non-empty value
-        return value !== '';
-      });
-    
+    const customPropertiesArray = Object.entries(mergedProperties).filter(([key, value]) => {
+      if (standardFields.includes(key)) return false;
+      // Only show properties that have a non-empty value
+      return value !== '';
+    });
+
     const customProperties = Object.fromEntries(customPropertiesArray);
 
     return html`
@@ -427,9 +465,12 @@ export class ToolbarUI implements IToolbarUI {
     `;
   }
 
-  private renderProperties(properties: Record<string, string>, baseProperties: Record<string, string> = {}) {
+  private renderProperties(
+    properties: Record<string, string>,
+    baseProperties: Record<string, string> = {},
+  ) {
     const entries = Object.entries(properties);
-    
+
     if (entries.length === 0) {
       return html`
         <div class="ut-empty-properties">
@@ -454,13 +495,17 @@ export class ToolbarUI implements IToolbarUI {
                 @input=${(e: Event) => this.updatePropertyValue(key, (e.target as HTMLInputElement).value)}
                 title=${isOverridden ? `Original: ${baseValue}` : ''}
               />
-              ${isOverridden ? html`
+              ${
+                isOverridden
+                  ? html`
                 <button 
                   class="ut-reset-field" 
                   @click=${() => this.resetProperty(key)}
                   title="Reset to original value"
                 >↻</button>
-              ` : null}
+              `
+                  : null
+              }
             </div>
           </div>
         `;
@@ -478,14 +523,14 @@ export class ToolbarUI implements IToolbarUI {
     const baseProperties = this.originalBaseContext.properties || {};
     const state = this.stateManager.getState();
     const properties = { ...(state.contextOverrides.properties || {}) };
-    
+
     // Restore to base value
     if (baseProperties[key] !== undefined) {
       properties[key] = baseProperties[key];
     } else {
       delete properties[key];
     }
-    
+
     this.stateManager.setContextOverride({ properties });
   }
 }

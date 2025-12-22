@@ -1,9 +1,9 @@
 import type { UnleashClient } from 'unleash-proxy-client';
 import { ToolbarStateManager } from './state';
-import {
+import type {
   FlagOverride,
-  IToolbarUI,
   InitToolbarOptions,
+  IToolbarUI,
   ToolbarState,
   UnleashContext,
   UnleashToolbarInstance,
@@ -22,12 +22,12 @@ export class UnleashToolbar implements UnleashToolbarInstance {
   constructor(
     stateManager: ToolbarStateManager,
     wrappedClient: WrappedUnleashClient,
-    options: InitToolbarOptions
+    options: InitToolbarOptions,
   ) {
     this.stateManager = stateManager;
     this.client = wrappedClient;
     this.ui = null;
-    
+
     // Initialize UI asynchronously to avoid SSR issues
     this.initUI(stateManager, wrappedClient, options);
   }
@@ -35,7 +35,7 @@ export class UnleashToolbar implements UnleashToolbarInstance {
   private async initUI(
     stateManager: ToolbarStateManager,
     wrappedClient: WrappedUnleashClient,
-    options: InitToolbarOptions
+    options: InitToolbarOptions,
   ) {
     const { ToolbarUI } = await import('./ui');
     this.ui = new ToolbarUI(stateManager, wrappedClient, options);
@@ -90,7 +90,7 @@ export class UnleashToolbar implements UnleashToolbarInstance {
  */
 export function initUnleashToolbar(
   client: UnleashClient,
-  options: InitToolbarOptions = {}
+  options: InitToolbarOptions = {},
 ): WrappedUnleashClient {
   const storageMode = options.storageMode || 'local';
   const storageKey = options.storageKey || 'unleash-toolbar-state';
@@ -102,7 +102,7 @@ export function initUnleashToolbar(
 
   // Expose toolbar instance globally for debugging/advanced use
   if (typeof window !== 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: no type for window
     (window as any).unleashToolbar = toolbar;
   }
 
@@ -111,13 +111,13 @@ export function initUnleashToolbar(
 
 // UMD global export
 if (typeof window !== 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: no type for window
   (window as any).UnleashToolbar = {
     init: initUnleashToolbar,
   };
 }
 
+export { ToolbarStateManager } from './state';
 // Export types
 export * from './types';
 export { wrapUnleashClient } from './wrapper';
-export { ToolbarStateManager } from './state';

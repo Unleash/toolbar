@@ -1,211 +1,208 @@
 import type { UnleashClient } from 'unleash-proxy-client';
-import {
-  FlagOverride,
-  UnleashVariant,
-  WrappedUnleashClient,
-} from './types';
-import { ToolbarStateManager } from './state';
+import type { ToolbarStateManager } from './state';
+import type { FlagOverride, UnleashVariant, WrappedUnleashClient } from './types';
 
 /**
  * Wrap an Unleash client to intercept evaluations and apply overrides
  */
 export function wrapUnleashClient(
   baseClient: UnleashClient,
-  stateManager: ToolbarStateManager
+  stateManager: ToolbarStateManager,
 ): WrappedUnleashClient {
   // If already wrapped, return as-is
   if (isWrappedClient(baseClient)) {
     return baseClient as WrappedUnleashClient;
   }
 
-    // Capture original base context before any updates
-    const originalBaseContext = baseClient.getContext();
+  // Capture original base context before any updates
+  const originalBaseContext = baseClient.getContext();
 
-    // Track user-registered 'update' listeners so we can trigger them on toolbar changes
-    const updateListeners = new Set<() => void>();
+  // Track user-registered 'update' listeners so we can trigger them on toolbar changes
+  const updateListeners = new Set<() => void>();
 
-    // Reference to the final proxy (will be assigned below)
-    // eslint-disable-next-line prefer-const
-    let proxyClient: WrappedUnleashClient;
+  // Reference to the final proxy (will be assigned below)
+  let proxyClient: WrappedUnleashClient;
 
-    // Create a partial object with only the methods we're intercepting.
-    // The Proxy will handle all other methods by forwarding to baseClient.
-    const wrappedClient: Partial<WrappedUnleashClient> = {
-        __original: baseClient,
-        isEnabled,
-        getVariant,
-        getContext,
-        on: onHandler,
+  // Create a partial object with only the methods we're intercepting.
+  // The Proxy will handle all other methods by forwarding to baseClient.
+  const wrappedClient: Partial<WrappedUnleashClient> = {
+    __original: baseClient,
+    isEnabled,
+    getVariant,
+    getContext,
+    on: onHandler,
+  };
+
+  function isEnabled(toggleName: string): boolean {
+    // Get merged context (toolbar overrides are applied via updateContext)
+    const currentContext = baseClient.getContext();
+    const mergedContext = stateManager.getMergedContext(currentContext);
+
+    // Get default evaluation from base client (uses client's global context)
+    const defaultValue = baseClient.isEnabled(toggleName);
+
+    // Apply override if exists
+    const override = stateManager.getFlagOverride(toggleName);
+    const effectiveValue = applyFlagOverride(defaultValue, override);
+
+    // Record evaluation with explicit flag type
+    stateManager.recordEvaluation(toggleName, 'flag', defaultValue, effectiveValue, mergedContext);
+
+    return effectiveValue as boolean;
+  }
+
+  function getVariant(toggleName: string): UnleashVariant {
+    // Get merged context (toolbar overrides are applied via updateContext)
+    const currentContext = baseClient.getContext();
+    const mergedContext = stateManager.getMergedContext(currentContext);
+
+    // Get default evaluation from base client (uses client's global context)
+    const defaultValue = baseClient.getVariant(toggleName);
+
+    // Apply override if exists
+    const override = stateManager.getFlagOverride(toggleName);
+    const effectiveValue = applyFlagOverride(defaultValue, override);
+
+    // Record evaluation with explicit flag type
+    stateManager.recordEvaluation(
+      toggleName,
+      'variant',
+      defaultValue,
+      effectiveValue,
+      mergedContext,
+    );
+
+    return effectiveValue as UnleashVariant;
+  }
+
+  function getContext() {
+    const baseContext = baseClient.getContext();
+    const merged = stateManager.getMergedContext(baseContext);
+    // Ensure appName exists (required by SDK type)
+    return {
+      appName: '',
+      ...merged,
     };
+  }
 
-    function isEnabled(
-        toggleName: string
-    ): boolean {
-        // Get merged context (toolbar overrides are applied via updateContext)
-        const currentContext = baseClient.getContext();
-        const mergedContext = stateManager.getMergedContext(currentContext);
-
-        // Get default evaluation from base client (uses client's global context)
-        const defaultValue = baseClient.isEnabled(toggleName);
-
-        // Apply override if exists
-        const override = stateManager.getFlagOverride(toggleName);
-        const effectiveValue = applyFlagOverride(defaultValue, override);
-        
-        // Record evaluation with explicit flag type
-        stateManager.recordEvaluation(toggleName, 'flag', defaultValue, effectiveValue, mergedContext);
-
-        return effectiveValue as boolean;
+  // Intercept on() method to capture 'update' listeners
+  function onHandler(event: string, callback: () => void): WrappedUnleashClient {
+    if (event === 'update') {
+      updateListeners.add(callback);
     }
+    // Forward to base client
+    baseClient.on(event, callback);
+    // Return the proxy for method chaining
+    return proxyClient;
+  }
 
-    function getVariant(
-        toggleName: string
-    ): UnleashVariant {
-        // Get merged context (toolbar overrides are applied via updateContext)
-        const currentContext = baseClient.getContext();
-        const mergedContext = stateManager.getMergedContext(currentContext);
+  // Helper to trigger all registered 'update' listeners
+  function triggerUpdateListeners() {
+    updateListeners.forEach((callback) => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('[Unleash Toolbar] Error in update listener:', error);
+      }
+    });
+  }
 
-        // Get default evaluation from base client (uses client's global context)
-        const defaultValue = baseClient.getVariant(toggleName);
+  // Listen to SDK 'update' event to re-evaluate flags when config changes
+  baseClient.on('update', () => {
+    // Re-evaluate all known flags with the new SDK configuration
+    stateManager.reEvaluateAllFlags((flagName) => {
+      // Get flag metadata to determine type
+      const metadata = stateManager.getFlagMetadata(flagName);
+      const isVariant = metadata?.flagType === 'variant';
 
-        // Apply override if exists
-        const override = stateManager.getFlagOverride(toggleName);
-        const effectiveValue = applyFlagOverride(defaultValue, override);
-        
-        // Record evaluation with explicit flag type
-        stateManager.recordEvaluation(toggleName, 'variant', defaultValue, effectiveValue, mergedContext);
+      // Get new default value from SDK using correct method
+      const defaultValue = isVariant
+        ? baseClient.getVariant(flagName)
+        : baseClient.isEnabled(flagName);
 
-        return effectiveValue as UnleashVariant;
-    }
+      // Apply override if exists
+      const override = stateManager.getFlagOverride(flagName);
+      const effectiveValue = applyFlagOverride(defaultValue, override);
 
+      return { defaultValue, effectiveValue };
+    });
+    // Trigger user's 'update' listeners (already called by SDK, but for consistency)
+  });
 
-    function getContext () {
-        const baseContext = baseClient.getContext();
-        const merged = stateManager.getMergedContext(baseContext);
-        // Ensure appName exists (required by SDK type)
-        return {
-            appName: '',
-            ...merged,
-        };
-    };
+  // Listen to toolbar state changes to update client context and trigger re-renders
+  stateManager.subscribe((event) => {
+    if (event.type === 'context_override_changed') {
+      // Update the base client's context with merged context
+      // Use original base context (not current client context which includes previous overrides)
+      const mergedContext = stateManager.getMergedContext(originalBaseContext);
 
+      // Remove appName and environment - they are static and can't be updated
+      const { appName: _appName, environment: _environment, ...updatableContext } = mergedContext;
 
-    // Intercept on() method to capture 'update' listeners
-    function onHandler (event: string, callback: () => void): WrappedUnleashClient {
-        if (event === 'update') {
-            updateListeners.add(callback);
-        }
-        // Forward to base client
-        baseClient.on(event, callback);
-        // Return the proxy for method chaining
-        return proxyClient;
-    };
-
-    // Helper to trigger all registered 'update' listeners
-    function triggerUpdateListeners() {
-        updateListeners.forEach(callback => {
-            try {
-                callback();
-            } catch (error) {
-                console.error('[Unleash Toolbar] Error in update listener:', error);
-            }
-        });
-    };
-
-    // Listen to SDK 'update' event to re-evaluate flags when config changes
-    baseClient.on('update', () => {
-        // Re-evaluate all known flags with the new SDK configuration
-        stateManager.reEvaluateAllFlags((flagName) => {
+      // Update context on the client (this triggers SDK re-evaluation)
+      baseClient
+        .updateContext(updatableContext)
+        .then(() => {
+          // Re-evaluate all known flags after context update
+          stateManager.reEvaluateAllFlags((flagName) => {
             // Get flag metadata to determine type
             const metadata = stateManager.getFlagMetadata(flagName);
             const isVariant = metadata?.flagType === 'variant';
-            
-            // Get new default value from SDK using correct method
-            const defaultValue = isVariant 
-                ? baseClient.getVariant(flagName)
-                : baseClient.isEnabled(flagName);
-            
+
+            // Get new default value from SDK with updated context using correct method
+            const defaultValue = isVariant
+              ? baseClient.getVariant(flagName)
+              : baseClient.isEnabled(flagName);
+
             // Apply override if exists
             const override = stateManager.getFlagOverride(flagName);
             const effectiveValue = applyFlagOverride(defaultValue, override);
-            
+
             return { defaultValue, effectiveValue };
+          });
+          // Trigger user's 'update' listeners after context change
+          triggerUpdateListeners();
+        })
+        .catch((err) => {
+          console.error('[Unleash Toolbar] Failed to update context:', err);
         });
-        // Trigger user's 'update' listeners (already called by SDK, but for consistency)
-    });
+    }
 
-    // Listen to toolbar state changes to update client context and trigger re-renders
-    stateManager.subscribe((event) => {
-        if (event.type === 'context_override_changed') {
-            // Update the base client's context with merged context
-            // Use original base context (not current client context which includes previous overrides)
-            const mergedContext = stateManager.getMergedContext(originalBaseContext);
-            
-            // Remove appName and environment - they are static and can't be updated
-            const { appName: _appName, environment: _environment, ...updatableContext } = mergedContext;
+    // Trigger user's 'update' listeners for flag override changes
+    // (flag_override_changed is emitted when override is set or removed, including bulk resets)
+    if (event.type === 'flag_override_changed') {
+      triggerUpdateListeners();
+    }
+  });
 
-            // Update context on the client (this triggers SDK re-evaluation)
-            baseClient.updateContext(updatableContext).then(() => {
-                    // Re-evaluate all known flags after context update
-                    stateManager.reEvaluateAllFlags((flagName) => {
-                        // Get flag metadata to determine type
-                        const metadata = stateManager.getFlagMetadata(flagName);
-                        const isVariant = metadata?.flagType === 'variant';
-                        
-                        // Get new default value from SDK with updated context using correct method
-                        const defaultValue = isVariant 
-                            ? baseClient.getVariant(flagName)
-                            : baseClient.isEnabled(flagName);
-                        
-                        // Apply override if exists
-                        const override = stateManager.getFlagOverride(flagName);
-                        const effectiveValue = applyFlagOverride(defaultValue, override);
-                        
-                        return { defaultValue, effectiveValue };
-                    });
-                    // Trigger user's 'update' listeners after context change
-                    triggerUpdateListeners();
-                }).catch(err => {
-                    console.error('[Unleash Toolbar] Failed to update context:', err);
-                });
-        }
+  // Proxy all other methods and properties to the base client
+  proxyClient = new Proxy(wrappedClient, {
+    get(target, prop) {
+      if (prop in target) {
+        return Reflect.get(target, prop);
+      }
+      const value = Reflect.get(baseClient, prop);
+      return typeof value === 'function' ? value.bind(baseClient) : value;
+    },
+    set(target, prop, value) {
+      if (prop in target) {
+        Reflect.set(target, prop, value);
+        return true;
+      }
+      Reflect.set(baseClient, prop, value);
+      return true;
+    },
+  }) as WrappedUnleashClient;
 
-        // Trigger user's 'update' listeners for flag override changes
-        // (flag_override_changed is emitted when override is set or removed, including bulk resets)
-        if (event.type === 'flag_override_changed') {
-            triggerUpdateListeners();
-        }
-    });
-
-    // Proxy all other methods and properties to the base client
-    proxyClient = new Proxy(wrappedClient, {
-        get(target, prop) {
-            if (prop in target) {
-                return Reflect.get(target, prop);
-            }
-            const value = Reflect.get(baseClient, prop);
-            return typeof value === 'function' ? value.bind(baseClient) : value;
-        },
-        set(target, prop, value) {
-            if (prop in target) {
-                Reflect.set(target, prop, value);
-                return true;
-            }
-            Reflect.set(baseClient, prop, value);
-            return true;
-        },
-    }) as WrappedUnleashClient;
-
-    return proxyClient;
+  return proxyClient;
 }
-
 
 /**
  * Apply flag override to evaluation result
  */
 function applyFlagOverride(
   defaultValue: boolean | UnleashVariant | null,
-  override: FlagOverride | null
+  override: FlagOverride | null,
 ): boolean | UnleashVariant | null {
   if (!override) return defaultValue;
 
