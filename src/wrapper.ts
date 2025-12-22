@@ -25,6 +25,7 @@ export function wrapUnleashClient(
     const updateListeners = new Set<() => void>();
 
     // Reference to the final proxy (will be assigned below)
+    // eslint-disable-next-line prefer-const
     let proxyClient: WrappedUnleashClient;
 
     // Create a partial object with only the methods we're intercepting.
