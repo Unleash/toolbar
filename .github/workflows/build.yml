@@ -28,6 +28,8 @@ jobs:
       - name: Lint validation
         run: npm run lint
 
+      - name: Build
+        run: npm run build
       - name: Test & coverage
         run: npm run test:coverage
       
