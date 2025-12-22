@@ -33,9 +33,9 @@ jobs:
       - name: Test & coverage
         run: npm run test:coverage
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          format: lcov
-          file: ./coverage/lcov.info
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v2
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     format: lcov
+      #     file: ./coverage/lcov.info
