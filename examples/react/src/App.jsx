@@ -1,9 +1,9 @@
-import { UnleashClient } from 'unleash-proxy-client'
-import { UnleashToolbarProvider, useFlag, useVariant } from '../../../dist/react.es.js'
+import { useFlag, useVariant } from '@unleash/proxy-client-react'
+import { UnleashToolbarProvider } from '../../../dist/react.es.js'
 import '../../../dist/toolbar.css'
 
-// Create Unleash client from environment variables
-const unleashClient = new UnleashClient({
+// Unleash configuration - matches official React SDK API
+const unleashConfig = {
   url: import.meta.env.VITE_UNLEASH_URL,
   clientKey: import.meta.env.VITE_UNLEASH_CLIENT_KEY,
   appName: import.meta.env.VITE_UNLEASH_APP_NAME,
@@ -17,10 +17,11 @@ const unleashClient = new UnleashClient({
       region: 'eu-west',
     },
   },
-});
+};
 
 function FeatureFlags() {
-  // Use built-in hooks - they automatically handle re-renders on override changes!
+  // Use hooks from the official Unleash React SDK
+  // They automatically handle re-renders on flag changes!
   const newCheckout = useFlag('new-checkout-flow');
   const darkMode = useFlag('dark-mode');
   const premium = useFlag('premium-features');
@@ -30,12 +31,11 @@ function FeatureFlags() {
     <>
       <h1>🚀 Unleash Toolbar - React Example</h1>
       <p>
-        This demo shows the Unleash Toolbar with <strong>built-in React hooks</strong>.
-        No manual event subscriptions needed!
+        This demo shows the Unleash Toolbar integrated with the <strong>official Unleash React SDK</strong>.
       </p>
       <p>
-        Feature flags automatically re-render when you change overrides in the toolbar.
-        Open the toolbar (bottom-right button) to test!
+        The toolbar wraps the SDK's client to provide override functionality.
+        Open the toolbar (bottom-right button) to test overrides!
       </p>
 
       <div className="feature-demo">
@@ -101,10 +101,11 @@ function FeatureFlags() {
       <div className="info-box">
         <strong>💡 Integration is Simple:</strong>
         <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+          <li>Just pass your <code>config</code> to <code>UnleashToolbarProvider</code></li>
+          <li>Use official <code>@unleash/proxy-client-react</code> hooks</li>
           <li><code>useFlag('flag-name')</code> returns a boolean that auto-updates</li>
-          <li><code>useVariant('flag-name')</code> returns a variant object that auto-updates</li>
-          <li>No manual event subscriptions required</li>
-          <li>Just wrap your app with UnleashToolbarProvider!</li>
+          <li><code>useVariant('flag-name')</code> returns a variant object</li>
+          <li>No need to import or manage FlagProvider!</li>
         </ul>
       </div>
     </>
@@ -114,7 +115,7 @@ function FeatureFlags() {
 function App() {
   return (
     <UnleashToolbarProvider 
-      client={unleashClient}
+      config={unleashConfig}
       toolbarOptions={import.meta.env.DEV ? {
         themePreset: 'dark',
         initiallyVisible: false,

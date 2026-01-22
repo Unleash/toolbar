@@ -46,10 +46,14 @@
   "author": "",
   "license": "Apache-2.0",
   "peerDependencies": {
-    "unleash-proxy-client": "^3.0.0"
+    "unleash-proxy-client": "^3.0.0",
+    "@unleash/proxy-client-react": "^5.0.1"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "@unleash/proxy-client-react": {
       "optional": true
     }
   },
@@ -62,6 +66,7 @@
     "@types/eslint": "^9.6.1",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
+    "@unleash/proxy-client-react": "^5.0.1",
     "@vitest/coverage-v8": "^4.0.15",
     "cssnano": "^7.1.2",
     "eslint": "^9.39.2",

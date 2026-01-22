@@ -62,15 +62,30 @@ client.on('update', () => {
 
 ### React
 
+The toolbar integrates seamlessly with the official **`@unleash/proxy-client-react`** SDK. Just pass your configuration - the toolbar handles everything automatically!
+
+```bash
+npm install @unleash/toolbar @unleash/proxy-client-react unleash-proxy-client
+```
+
 ```tsx
-import { UnleashToolbarProvider, useFlag, useVariant } from '@unleash/toolbar/react';
+import { useFlag, useVariant } from '@unleash/proxy-client-react';
+import { UnleashToolbarProvider } from '@unleash/toolbar/react';
 import '@unleash/toolbar/toolbar.css';
 
-// Wrap your app with the provider
+// Same config format as the official React SDK
+const config = {
+  url: 'https://your-unleash-instance.com/api/frontend',
+  clientKey: 'your-client-key',
+  appName: 'my-app',
+  refreshInterval: 15
+};
+
+// That's it! No need to import FlagProvider or manage the SDK client
 function App() {
   return (
     <UnleashToolbarProvider 
-      client={unleashClient}
+      config={config}
       toolbarOptions={{
         storageMode: 'local',
         position: 'bottom-right'
@@ -81,7 +96,7 @@ function App() {
   );
 }
 
-// Use hooks in your components
+// Use hooks from the official React SDK - they work with toolbar overrides!
 function MyComponent() {
   const isEnabled = useFlag('my-feature');
   const variant = useVariant('my-experiment');
@@ -95,18 +110,54 @@ function MyComponent() {
 }
 ```
 
+**Key Points:**
+- Pass `config` directly to `UnleashToolbarProvider` - no other imports needed!
+- The toolbar automatically uses `FlagProvider` from the React SDK
+- Import hooks from `@unleash/proxy-client-react` (the official SDK)
+- All official React SDK hooks work seamlessly with toolbar overrides
+
+**Advanced: Custom FlagProvider or pre-instantiated client**
+```tsx
+import { FlagProvider } from '@unleash/proxy-client-react';
+import { UnleashClient } from 'unleash-proxy-client';
+
+// Option 1: Custom FlagProvider
+<UnleashToolbarProvider 
+  FlagProvider={FlagProvider}  // Optional - use if you need customization
+  config={config}
+>
+  <MyApp />
+</UnleashToolbarProvider>
+
+// Option 2: Pre-instantiated client
+const client = new UnleashClient({ /* config */ });
+
+<UnleashToolbarProvider 
+  client={client}  // Pass client instead of config
+  toolbarOptions={{ /* ... */ }}
+>
+  <MyApp />
+</UnleashToolbarProvider>
+```
+```
+
 ### Next.js (Client Components)
 
 ```tsx
 'use client';
 
 import { UnleashToolbarProvider } from '@unleash/toolbar/react';
-import { unleashClient } from '@/lib/unleash';
 import '@unleash/toolbar/toolbar.css';
+
+const config = {
+  url: process.env.NEXT_PUBLIC_UNLEASH_URL,
+  clientKey: process.env.NEXT_PUBLIC_UNLEASH_CLIENT_KEY,
+  appName: 'my-next-app'
+};
 
 export function Providers({ children }) {
   return (
-    <UnleashToolbarProvider client={unleashClient}>
+    <UnleashToolbarProvider config={config}>
       {children}
     </UnleashToolbarProvider>
   );
@@ -250,21 +301,32 @@ This works for both toolbar changes (flag overrides, context overrides) and SDK 
 
 ### React Hooks
 
+Use hooks from the official `@unleash/proxy-client-react` SDK - they automatically work with toolbar overrides!
+
 ```typescript
 import {
   useFlag,
   useVariant,
-  useUnleashClient
-} from '@unleash/toolbar/react';
+  useUnleashClient,
+  useUnleashContext,
+  useFlagsStatus
+} from '@unleash/proxy-client-react';
 
-// Check flag status
+// Check flag status - updates automatically when toolbar overrides change
 const isEnabled = useFlag('my-feature');
 
-// Get variant
+// Get variant - updates automatically when toolbar overrides change
 const variant = useVariant('my-experiment');
 
-// Access wrapped client
+// Access client (the wrapped client from the toolbar)
 const client = useUnleashClient();
+
+// Update context dynamically
+const updateContext = useUnleashContext();
+await updateContext({ userId: 'new-user-id' });
+
+// Check loading/ready state
+const { flagsReady, flagsError } = useFlagsStatus();
 ```
 
 ## UI Features

@@ -1,6 +1,6 @@
 # Unleash Toolbar - React Example
 
-This example demonstrates how to use the Unleash Toolbar with React using **built-in hooks** - minimal integration required!
+This example demonstrates how to use the Unleash Toolbar with React and the official **Unleash React SDK** - minimal integration required!
 
 ## Setup
 
@@ -24,38 +24,59 @@ This example demonstrates how to use the Unleash Toolbar with React using **buil
 
 ## Features Demonstrated
 
-- ✅ **Built-in React hooks** (`useFlag`, `useVariant`) - no manual subscriptions!
-- ✅ **UnleashToolbarProvider** - wraps your app in one line
+- ✅ **Official Unleash React SDK** integration (`useFlag`, `useVariant`, `useUnleashClient`)
+- ✅ **Config-based setup** - just pass a config object, no manual client instantiation
+- ✅ **No extra imports** - `UnleashToolbarProvider` includes the `FlagProvider` automatically
 - ✅ Automatic re-renders when toolbar overrides change
 - ✅ No manual state management or event subscriptions needed
 - ✅ Clean, simple integration
 
 ## How It Works
 
-1. Wrap your app with `UnleashToolbarProvider` (handles client initialization and toolbar setup)
-2. Use `useFlag('flag-name')` to get boolean flags
-3. Use `useVariant('flag-name')` to get variant flags
-4. That's it! Overrides automatically trigger re-renders.
+1. Wrap your app with `UnleashToolbarProvider` and pass a `config` object (no client instantiation needed!)
+2. Use standard Unleash React hooks: `useFlag('flag-name')`, `useVariant('flag-name')`, etc.
+3. That's it! The toolbar wraps your client and overrides work seamlessly.
 
-**No manual subscriptions. No state management. Just hooks.**
+**No manual client instantiation. No extra provider imports. Just config and hooks.**
 
-## Code Comparison
+## Code Example
 
-**Without built-in hooks (❌ verbose):**
+**Simple config-based setup:**
 ```jsx
-const [flags, setFlags] = useState({});
-useEffect(() => {
-  const updateFlags = () => setFlags({...});
-  const unsubscribe = toolbar.subscribe(updateFlags);
-  return () => unsubscribe();
-}, []);
+import { UnleashToolbarProvider } from '@unleash/toolbar/react';
+import { useFlag, useVariant } from '@unleash/proxy-client-react';
+
+function App() {
+  return (
+    <UnleashToolbarProvider
+      config={{
+        url: 'https://your-unleash.com/api/frontend',
+        clientKey: 'your-client-key',
+        appName: 'my-app'
+      }}
+      toolbarOptions={{ themePreset: 'dark' }}
+    >
+      <YourApp />
+    </UnleashToolbarProvider>
+  );
+}
+
+function YourApp() {
+  const newCheckout = useFlag('new-checkout');
+  const paymentVariant = useVariant('payment-provider');
+  
+  return <div>...</div>;
+}
 ```
 
-**With built-in hooks (✅ simple):**
-```jsx
-const newCheckout = useFlag('new-checkout');
-const paymentVariant = useVariant('payment-provider');
-```
+**That's it!** No client instantiation, no provider imports, no subscriptions.
+
+## Benefits Over Manual Integration
+
+- **Simpler**: Config object instead of manual `new UnleashClient()`
+- **Cleaner**: No need to import and use `FlagProvider` separately
+- **Compatible**: Works with all official Unleash React SDK hooks
+- **Flexible**: Can still pass a pre-configured client if needed
 
 ## Testing
 

@@ -1,132 +1,140 @@
-import type { UnleashClient } from 'unleash-proxy-client';
+import { UnleashClient, type IConfig } from 'unleash-proxy-client';
+import { FlagProvider as DefaultFlagProvider } from '@unleash/proxy-client-react';
 import { initUnleashToolbar } from '../index';
-import {
-  InitToolbarOptions,
-  UnleashVariant,
-  WrappedUnleashClient,
-} from '../types';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { InitToolbarOptions } from '../types';
+import React, { useRef } from 'react';
 
-interface UnleashToolbarContextValue {
-  client: WrappedUnleashClient | UnleashClient;
-  refreshKey: number;
-}
-
-const UnleashToolbarContext = createContext<UnleashToolbarContextValue | null>(null);
-
+/**
+ * Props for the UnleashToolbarProvider that wraps the official FlagProvider
+ */
 interface UnleashToolbarProviderProps {
-  client: UnleashClient;
+  /**
+   * The official FlagProvider component from @unleash/proxy-client-react
+   * Optional - defaults to the standard FlagProvider
+   */
+  FlagProvider?: React.ComponentType<any>;
+  
+  /**
+   * Unleash SDK configuration object (same as official React SDK)
+   * Either provide `config` OR `client`, not both
+   */
+  config?: IConfig;
+  
+  /**
+   * Pre-instantiated Unleash client (will be wrapped with toolbar)
+   * Either provide `config` OR `client`, not both
+   */
+  client?: UnleashClient;
+  
+  /**
+   * Optional toolbar configuration
+   * Set to undefined to disable toolbar in production
+   */
   toolbarOptions?: InitToolbarOptions;
+  
+  /**
+   * Whether to automatically start the client
+   * Defaults to true
+   */
+  startClient?: boolean;
+  
+  /**
+   * Children components
+   */
   children: React.ReactNode;
+  
+  /**
+   * Any additional props to pass to the official FlagProvider
+   */
+  [key: string]: any;
 }
 
 /**
- * Provider component that wraps the Unleash client and initializes the toolbar
+ * Higher-order provider that wraps the official Unleash React SDK's FlagProvider
+ * and initializes the toolbar with a wrapped client.
+ * 
+ * Simple usage (no imports needed):
+ * ```tsx
+ * import { UnleashToolbarProvider } from '@unleash/toolbar/react';
+ * 
+ * function App() {
+ *   return (
+ *     <UnleashToolbarProvider
+ *       config={{
+ *         url: 'https://your-unleash-instance.com/api/frontend',
+ *         clientKey: 'your-client-key',
+ *         appName: 'my-app'
+ *       }}
+ *       toolbarOptions={{ themePreset: 'dark' }}
+ *     >
+ *       <YourApp />
+ *     </UnleashToolbarProvider>
+ *   );
+ * }
+ * ```
+ * 
+ * Advanced usage with custom FlagProvider:
+ * ```tsx
+ * import { FlagProvider } from '@unleash/proxy-client-react';
+ * 
+ * <UnleashToolbarProvider
+ *   FlagProvider={FlagProvider}
+ *   config={{ ... }}
+ * >
+ *   <YourApp />
+ * </UnleashToolbarProvider>
+ * ```
  */
 export function UnleashToolbarProvider({
+  FlagProvider = DefaultFlagProvider,
+  config,
   client,
   toolbarOptions = {},
+  startClient = true,
   children,
+  ...flagProviderProps
 }: UnleashToolbarProviderProps) {
-  const wrappedClientRef = useRef<WrappedUnleashClient | UnleashClient | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  // Validate that either config or client is provided, not both
+  if (!config && !client) {
+    throw new Error(
+      'UnleashToolbarProvider: Either "config" or "client" prop must be provided'
+    );
+  }
+  if (config && client) {
+    throw new Error(
+      'UnleashToolbarProvider: Provide either "config" or "client" prop, not both'
+    );
+  }
 
-  useEffect(() => {
+  // Wrap client immediately on first render (not in useEffect)
+  // Use a lazy initializer to ensure it only runs once
+  const wrappedClientRef = useRef<UnleashClient | null>(null);
+  
+  if (wrappedClientRef.current === null) {
     // Only initialize on client side (not during SSR)
-    if (typeof window === 'undefined') return;
-    
-    // Initialize toolbar with client (only once)
-    if (!wrappedClientRef.current) {
+    if (typeof window !== 'undefined') {
+      // Create client from config if provided
+      const unleashClient = client || new UnleashClient(config!);
+      
       // Skip toolbar initialization if toolbarOptions is explicitly undefined (production mode)
       if (toolbarOptions === undefined) {
-        wrappedClientRef.current = client;
+        wrappedClientRef.current = unleashClient;
       } else {
-        wrappedClientRef.current = initUnleashToolbar(client, toolbarOptions);
-        
-        // Listen to SDK 'update' events (triggered by SDK and toolbar changes)
-        wrappedClientRef.current.on('update', () => {
-          setRefreshKey((prev: number) => prev + 1);
-        });
+        wrappedClientRef.current = initUnleashToolbar(unleashClient, toolbarOptions);
       }
-      
-      // Start the client
-      client.start();
+    } else {
+      // SSR: create unwrapped client
+      wrappedClientRef.current = client || new UnleashClient(config!);
     }
-
-    // Note: We don't cleanup/destroy the toolbar in the effect cleanup
-    // because in React StrictMode, effects run twice in development.
-    // The toolbar should persist for the lifetime of the app.
-  }, []);
-
-  // Fallback to a dummy wrapped client during SSR
-  const contextValue = useMemo(
-    () => ({
-      client: wrappedClientRef.current || client,
-      refreshKey,
-    }),
-    [refreshKey]
-  );
+  }
 
   return (
-    <UnleashToolbarContext.Provider value={contextValue}>
+    <FlagProvider
+      unleashClient={wrappedClientRef.current}
+      startClient={startClient}
+      {...flagProviderProps}
+    >
       {children}
-    </UnleashToolbarContext.Provider>
+    </FlagProvider>
   );
-}
-
-/**
- * Hook to access the wrapped Unleash client
- */
-export function useUnleashClient(): UnleashClient {
-  const context = useContext(UnleashToolbarContext);
-  if (!context) {
-    throw new Error('useUnleashClient must be used within UnleashToolbarProvider');
-  }
-  return context.client;
-}
-
-/**
- * Hook to check if a feature flag is enabled (with override support)
- */
-export function useFlag(
-  flagName: string
-): boolean {
-  const contextValue = useContext(UnleashToolbarContext);
-  if (!contextValue) {
-    throw new Error('useFlag must be used within UnleashToolbarProvider');
-  }
-
-  const { client, refreshKey } = contextValue;
-
-  // Force re-evaluation when overrides change
-  const [value, setValue] = useState(() => client.isEnabled(flagName));
-
-  useEffect(() => {
-    setValue(client.isEnabled(flagName));
-  }, [client, flagName, refreshKey]);
-
-  return value;
-}
-
-/**
- * Hook to get a feature flag variant (with override support)
- */
-export function useVariant(
-  flagName: string
-): UnleashVariant {
-  const contextValue = useContext(UnleashToolbarContext);
-  if (!contextValue) {
-    throw new Error('useVariant must be used within UnleashToolbarProvider');
-  }
-
-  const { client, refreshKey } = contextValue;
-
-  // Force re-evaluation when overrides change
-  const [variant, setVariant] = useState(() => client.getVariant(flagName));
-
-  useEffect(() => {
-    setVariant(client.getVariant(flagName));
-  }, [client, flagName, refreshKey]);
-
-  return variant;
 }
