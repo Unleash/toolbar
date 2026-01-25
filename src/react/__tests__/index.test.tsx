@@ -95,6 +95,7 @@ describe('UnleashToolbarProvider', () => {
 
     expect(() => {
       render(
+        // @ts-expect-error - Testing runtime validation
         <UnleashToolbarProvider>
           <div>Test</div>
         </UnleashToolbarProvider>

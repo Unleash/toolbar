@@ -5,26 +5,14 @@ import type { InitToolbarOptions } from '../types';
 import React, { useRef } from 'react';
 
 /**
- * Props for the UnleashToolbarProvider that wraps the official FlagProvider
+ * Base props shared by both config and client variants
  */
-interface UnleashToolbarProviderProps {
+interface BaseToolbarProviderProps {
   /**
    * The official FlagProvider component from @unleash/proxy-client-react
    * Optional - defaults to the standard FlagProvider
    */
   FlagProvider?: React.ComponentType<any>;
-  
-  /**
-   * Unleash SDK configuration object (same as official React SDK)
-   * Either provide `config` OR `client`, not both
-   */
-  config?: IConfig;
-  
-  /**
-   * Pre-instantiated Unleash client (will be wrapped with toolbar)
-   * Either provide `config` OR `client`, not both
-   */
-  client?: UnleashClient;
   
   /**
    * Optional toolbar configuration
@@ -48,6 +36,33 @@ interface UnleashToolbarProviderProps {
    */
   [key: string]: any;
 }
+
+/**
+ * Props when using config-based initialization
+ */
+interface ConfigBasedProps extends BaseToolbarProviderProps {
+  /**
+   * Unleash SDK configuration object (same as official React SDK)
+   */
+  config: IConfig;
+  client?: never;
+}
+
+/**
+ * Props when using pre-instantiated client
+ */
+interface ClientBasedProps extends BaseToolbarProviderProps {
+  /**
+   * Pre-instantiated Unleash client (will be wrapped with toolbar)
+   */
+  client: UnleashClient;
+  config?: never;
+}
+
+/**
+ * Props for the UnleashToolbarProvider - either config OR client must be provided
+ */
+type UnleashToolbarProviderProps = ConfigBasedProps | ClientBasedProps;
 
 /**
  * Higher-order provider that wraps the official Unleash React SDK's FlagProvider
