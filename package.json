@@ -86,7 +86,7 @@
     "terser": "^5.44.1",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.49.0",
-    "unleash-client": "^6.9.3",
+    "unleash-client": "^6.9.4",
     "unleash-proxy-client": "^3.4.1",
     "vite": "^7.2.7",
     "vite-plugin-dts": "^4.5.4",
