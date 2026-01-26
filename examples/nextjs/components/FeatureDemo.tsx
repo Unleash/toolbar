@@ -1,9 +1,9 @@
 'use client';
 
-import { useFlag, useVariant } from '@unleash/toolbar/react';
+import { useFlag, useVariant } from '@unleash/toolbar/next';
 
 export function FeatureDemo() {
-  // Use built-in hooks - they automatically handle re-renders on override changes!
+  // Use hooks from toolbar/next - they automatically handle re-renders on override changes!
   const newCheckout = useFlag('new-checkout');
   const darkMode = useFlag('dark-mode');
   const paymentVariant = useVariant('payment-provider');
@@ -33,7 +33,7 @@ export function FeatureDemo() {
         />
         <VariantCard
           name="payment-provider"
-          variant={paymentVariant.enabled ? paymentVariant.name : 'default'}
+          variant={paymentVariant.enabled ? paymentVariant.name || 'default' : 'default'}
           description="Select payment provider (stripe, paypal, square)"
         />
       </div>

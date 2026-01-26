@@ -17,6 +17,15 @@ export default function Home() {
         </div>
         
         <FeatureDemo />
+
+        <div className="flex gap-4 mt-4">
+          <a
+            href="/server-demo"
+            className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black font-medium hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-colors"
+          >
+            View Server Component Demo →
+          </a>
+        </div>
       </main>
     </div>
   );

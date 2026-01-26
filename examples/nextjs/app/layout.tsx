@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { UnleashProvider } from "@/components/UnleashProvider";
+import { UnleashToolbarProvider } from "@unleash/toolbar/next";
+import "@unleash/toolbar/toolbar.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,9 +29,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <UnleashProvider>
+        <UnleashToolbarProvider
+          config={{
+            url: process.env.NEXT_PUBLIC_UNLEASH_URL!,
+            clientKey: process.env.NEXT_PUBLIC_UNLEASH_CLIENT_KEY!,
+            appName: process.env.NEXT_PUBLIC_UNLEASH_APP_NAME || 'nextjs-demo',
+            environment: 'development',
+            refreshInterval: 15,
+          }}
+          toolbarOptions={
+            process.env.NODE_ENV !== 'production' 
+              ? { themePreset: 'dark', initiallyVisible: false }
+              : undefined
+          }
+        >
           {children}
-        </UnleashProvider>
+        </UnleashToolbarProvider>
       </body>
     </html>
   );
