@@ -15,7 +15,7 @@ import type {
  */
 function setCookie(name: string, value: string, maxAgeSeconds: number): void {
   if (typeof document === 'undefined') return;
-  
+
   const encodedValue = encodeURIComponent(value);
   const cookieParts = [
     `${name}=${encodedValue}`,
@@ -23,7 +23,7 @@ function setCookie(name: string, value: string, maxAgeSeconds: number): void {
     `max-age=${maxAgeSeconds}`,
     'SameSite=Lax',
   ];
-  
+
   document.cookie = cookieParts.join('; ');
 }
 

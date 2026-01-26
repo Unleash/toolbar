@@ -671,7 +671,7 @@ describe('ToolbarStateManager', () => {
     it('should sync to cookies when enabled', () => {
       const manager = new ToolbarStateManager('local', 'test-toolbar-state', false);
       manager.enableCookieSync();
-      
+
       manager.recordEvaluation('flag', 'flag', true, true, {});
       manager.setFlagOverride('flag', { type: 'flag', value: false });
 
@@ -682,15 +682,15 @@ describe('ToolbarStateManager', () => {
     it('should clear cookie when clearing storage with sync enabled', () => {
       const manager = new ToolbarStateManager('local', 'test-toolbar-state', false);
       manager.enableCookieSync();
-      
+
       manager.recordEvaluation('flag', 'flag', true, true, {});
       expect(document.cookie).toContain('unleash-toolbar-state');
 
       manager.clearPersistence();
-      
+
       // Cookie should be cleared
-      const cookies = document.cookie.split(';').map(c => c.trim());
-      const toolbarCookie = cookies.find(c => c.startsWith('unleash-toolbar-state='));
+      const cookies = document.cookie.split(';').map((c) => c.trim());
+      const toolbarCookie = cookies.find((c) => c.startsWith('unleash-toolbar-state='));
       expect(toolbarCookie).toBeUndefined();
     });
   });

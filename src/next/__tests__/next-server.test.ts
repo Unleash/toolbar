@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ToolbarState } from '../../types';
 import {
   applyToolbarOverrides,
   applyToolbarOverridesToToggles,
@@ -6,7 +7,6 @@ import {
   parseToolbarState,
   UNLEASH_TOOLBAR_COOKIE,
 } from '../server';
-import type { ToolbarState } from '../../types';
 
 describe('Next.js Server Integration', () => {
   describe('parseToolbarState', () => {
