@@ -87,6 +87,9 @@ export class UnleashToolbar implements UnleashToolbarInstance {
  * Initialize the Unleash Toolbar with a client
  * This is the main entry point - handles both toolbar creation and client wrapping
  * Returns the wrapped client directly for immediate use
+ *
+ * @param client - The Unleash client to wrap
+ * @param options - Toolbar configuration options
  */
 export function initUnleashToolbar(
   client: UnleashClient,
@@ -95,8 +98,15 @@ export function initUnleashToolbar(
   const storageMode = options.storageMode || 'local';
   const storageKey = options.storageKey || 'unleash-toolbar-state';
   const sortAlphabetically = options.sortAlphabetically || false;
+  const enableCookieSync = options.enableCookieSync || false;
 
   const stateManager = new ToolbarStateManager(storageMode, storageKey, sortAlphabetically);
+
+  // Enable cookie sync if requested (for Next.js SSR)
+  if (enableCookieSync) {
+    stateManager.enableCookieSync();
+  }
+
   const wrappedClient = wrapUnleashClient(client, stateManager);
   const toolbar = new UnleashToolbar(stateManager, wrappedClient, options);
 

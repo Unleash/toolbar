@@ -114,6 +114,8 @@ export interface InitToolbarOptions {
   initiallyVisible?: boolean;
   /** Sort flags alphabetically instead of by evaluation order (default: false) */
   sortAlphabetically?: boolean;
+  /** Enable cookie synchronization for server-side rendering (Next.js) (default: false) */
+  enableCookieSync?: boolean;
 }
 
 /**

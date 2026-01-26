@@ -652,4 +652,46 @@ describe('ToolbarStateManager', () => {
       expect(freshState.contextOverrides.userId).toBeUndefined();
     });
   });
+
+  describe('cookie sync', () => {
+    beforeEach(() => {
+      // Clear any existing cookies
+      document.cookie = 'unleash-toolbar-state=; path=/; max-age=0';
+    });
+
+    it('should not sync to cookies by default', () => {
+      const manager = new ToolbarStateManager('local', 'test-toolbar-state', false);
+      manager.recordEvaluation('flag', 'flag', true, true, {});
+      manager.setFlagOverride('flag', { type: 'flag', value: false });
+
+      // Cookie should not be set
+      expect(document.cookie).not.toContain('unleash-toolbar-state');
+    });
+
+    it('should sync to cookies when enabled', () => {
+      const manager = new ToolbarStateManager('local', 'test-toolbar-state', false);
+      manager.enableCookieSync();
+      
+      manager.recordEvaluation('flag', 'flag', true, true, {});
+      manager.setFlagOverride('flag', { type: 'flag', value: false });
+
+      // Cookie should be set
+      expect(document.cookie).toContain('unleash-toolbar-state');
+    });
+
+    it('should clear cookie when clearing storage with sync enabled', () => {
+      const manager = new ToolbarStateManager('local', 'test-toolbar-state', false);
+      manager.enableCookieSync();
+      
+      manager.recordEvaluation('flag', 'flag', true, true, {});
+      expect(document.cookie).toContain('unleash-toolbar-state');
+
+      manager.clearPersistence();
+      
+      // Cookie should be cleared
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const toolbarCookie = cookies.find(c => c.startsWith('unleash-toolbar-state='));
+      expect(toolbarCookie).toBeUndefined();
+    });
+  });
 });

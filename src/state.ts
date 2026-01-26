@@ -11,6 +11,31 @@ import type {
 } from './types';
 
 /**
+ * Helper to set a cookie with proper encoding
+ */
+function setCookie(name: string, value: string, maxAgeSeconds: number): void {
+  if (typeof document === 'undefined') return;
+  
+  const encodedValue = encodeURIComponent(value);
+  const cookieParts = [
+    `${name}=${encodedValue}`,
+    'path=/',
+    `max-age=${maxAgeSeconds}`,
+    'SameSite=Lax',
+  ];
+  
+  document.cookie = cookieParts.join('; ');
+}
+
+/**
+ * Helper to delete a cookie
+ */
+function deleteCookie(name: string): void {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; path=/; max-age=0`;
+}
+
+/**
  * Event emitter for toolbar state changes
  */
 class EventEmitter {
@@ -36,10 +61,20 @@ class EventEmitter {
  * Storage abstraction for different persistence modes
  */
 class StorageAdapter {
+  private enableCookieSync: boolean = false;
+
   constructor(
     private mode: StorageMode,
     private key: string,
   ) {}
+
+  /**
+   * Enable or disable cookie synchronization for SSR support
+   * Should be enabled by Next.js integration
+   */
+  setCookieSyncEnabled(enabled: boolean): void {
+    this.enableCookieSync = enabled;
+  }
 
   private getStorage(): Storage | null {
     if (typeof window === 'undefined') return null;
@@ -51,6 +86,23 @@ class StorageAdapter {
         return window.sessionStorage;
       default:
         return null;
+    }
+  }
+
+  /**
+   * Syncs state to cookies for server-side access (Next.js SSR)
+   * Only runs when explicitly enabled via setCookieSyncEnabled()
+   */
+  private syncToCookies(state: ToolbarState): void {
+    if (!this.enableCookieSync) return;
+    if (typeof document === 'undefined') return;
+
+    try {
+      const value = JSON.stringify(state);
+      // Set cookie with 7 day expiration, accessible from same origin
+      setCookie('unleash-toolbar-state', value, 7 * 24 * 60 * 60);
+    } catch (error) {
+      console.error('[Unleash Toolbar] Failed to sync state to cookies:', error);
     }
   }
 
@@ -73,6 +125,7 @@ class StorageAdapter {
 
     try {
       storage.setItem(this.key, JSON.stringify(state));
+      this.syncToCookies(state);
     } catch (error) {
       console.error('[Unleash Toolbar] Failed to save state to storage:', error);
     }
@@ -84,6 +137,10 @@ class StorageAdapter {
 
     try {
       storage.removeItem(this.key);
+      // Also clear the cookie if sync was enabled
+      if (this.enableCookieSync) {
+        deleteCookie('unleash-toolbar-state');
+      }
     } catch (error) {
       console.error('[Unleash Toolbar] Failed to clear storage:', error);
     }
@@ -398,5 +455,13 @@ export class ToolbarStateManager {
    */
   getFlagMetadata(name: string): FlagMetadata | null {
     return this.state.flags[name] || null;
+  }
+
+  /**
+   * Enable cookie synchronization for server-side rendering support
+   * Should be called by Next.js integration when SSR is needed
+   */
+  enableCookieSync(): void {
+    this.storage['setCookieSyncEnabled'](true);
   }
 }

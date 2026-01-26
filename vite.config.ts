@@ -11,6 +11,16 @@ export default defineConfig({
       include: ['src/**/*.ts', 'src/**/*.tsx'],
       exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts']
     }),
+    // Add "use client" directive to Next.js client bundle
+    {
+      name: 'add-use-client-directive',
+      generateBundle(options, bundle) {
+        const nextBundle = bundle['next.es.js'];
+        if (nextBundle && 'code' in nextBundle) {
+          nextBundle.code = `"use client";\n${nextBundle.code}`;
+        }
+      }
+    },
     // Copy and minify CSS file to dist folder
     {
       name: 'copy-css',
@@ -38,7 +48,9 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
-        react: resolve(__dirname, 'src/react/index.tsx')
+        react: resolve(__dirname, 'src/react/index.tsx'),
+        next: resolve(__dirname, 'src/next/index.ts'),
+        'next-server': resolve(__dirname, 'src/next/server.ts')
       },
       name: 'UnleashSessionToolbar',
       formats: ['es'],
@@ -63,7 +75,7 @@ export default defineConfig({
       },
       format: {
         comments: false,
-        ecma: 2022,
+        ecma: 2020,
       },
     },
     rollupOptions: {
