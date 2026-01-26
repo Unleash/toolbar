@@ -181,4 +181,5 @@ export interface UnleashToolbarInstance {
  */
 export interface WrappedUnleashClient extends UnleashClient {
   __original: UnleashClient;
+  __toolbar?: UnleashToolbarInstance;
 }

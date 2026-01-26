@@ -1,8 +1,8 @@
 import { UnleashClient, type IConfig } from 'unleash-proxy-client';
 import { FlagProvider as DefaultFlagProvider } from '@unleash/proxy-client-react';
-import { initUnleashToolbar } from '../index';
+import { wrapUnleashClient, ToolbarStateManager, UnleashToolbar } from '../index';
 import type { InitToolbarOptions } from '../types';
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 /**
  * Base props shared by both config and client variants
@@ -121,27 +121,66 @@ export function UnleashToolbarProvider({
     );
   }
 
-  // Wrap client immediately on first render (not in useEffect)
-  // Use a lazy initializer to ensure it only runs once
+  const toolbarRef = useRef<any>(null);
+  const stateManagerRef = useRef<any>(null);
+  
+  // Wrap client synchronously (idempotent, captures flag evaluations)
+  // This ensures the wrapper intercepts all flag evaluations from the first render
   const wrappedClientRef = useRef<UnleashClient | null>(null);
   
   if (wrappedClientRef.current === null) {
-    // Only initialize on client side (not during SSR)
-    if (typeof window !== 'undefined') {
-      // Create client from config if provided
-      const unleashClient = client || new UnleashClient(config!);
-      
-      // Skip toolbar initialization if toolbarOptions is explicitly undefined (production mode)
-      if (toolbarOptions === undefined) {
-        wrappedClientRef.current = unleashClient;
-      } else {
-        wrappedClientRef.current = initUnleashToolbar(unleashClient, toolbarOptions);
+    const unleashClient = client || new UnleashClient(config!);
+    
+    if (toolbarOptions !== undefined) {
+      // Create state manager that will be shared between wrapper and toolbar
+      const storageMode = toolbarOptions.storageMode || 'local';
+      const storageKey = toolbarOptions.storageKey || 'unleash-toolbar-state';
+      const sortAlphabetically = toolbarOptions.sortAlphabetically || false;
+      const stateManager = new ToolbarStateManager(storageMode, storageKey, sortAlphabetically);
+      stateManagerRef.current = stateManager;
+
+      if (toolbarOptions.enableCookieSync) {
+        stateManager.enableCookieSync();
       }
+      
+      // Wrap client synchronously with shared state manager
+      wrappedClientRef.current = wrapUnleashClient(unleashClient, stateManager);
     } else {
-      // SSR: create unwrapped client
-      wrappedClientRef.current = client || new UnleashClient(config!);
+      // no toolbar - just use original client
+      wrappedClientRef.current = unleashClient;
     }
   }
+  
+  // Create toolbar UI in useEffect (StrictMode-safe)
+  useEffect(() => {
+    // Only create toolbar if:
+    // 1. toolbarOptions is defined
+    // 2. No toolbar ref yet
+    // 3. State manager exists
+    // 4. Wrapped client doesn't already have a toolbar (prevents StrictMode duplicates)
+    if (toolbarOptions !== undefined && 
+        !toolbarRef.current && 
+        stateManagerRef.current &&
+        !(wrappedClientRef.current as any)?.__toolbar) {
+      // Create toolbar with the same state manager used for wrapping
+      const toolbar = new UnleashToolbar(stateManagerRef.current, wrappedClientRef.current as any, toolbarOptions);
+      (wrappedClientRef.current as any).__toolbar = toolbar;
+      toolbarRef.current = toolbar;
+      
+      // Expose globally
+      if (typeof window !== 'undefined') {
+        (window as any).unleashToolbar = toolbar;
+      }
+    }
+    
+    // Cleanup toolbar on unmount
+    return () => {
+      if (toolbarRef.current && typeof toolbarRef.current.destroy === 'function') {
+        toolbarRef.current.destroy();
+        toolbarRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <FlagProvider
