@@ -79,12 +79,13 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['react', 'react/jsx-runtime', 'unleash-proxy-client'],
+      external: ['react', 'react/jsx-runtime', 'unleash-proxy-client', '@unleash/proxy-client-react'],
       output: {
         globals: {
           react: 'React',
           'react/jsx-runtime': 'jsxRuntime',
-          'unleash-proxy-client': 'UnleashClient'
+          'unleash-proxy-client': 'UnleashClient',
+          '@unleash/proxy-client-react': 'UnleashReact'
         },
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.png')) return 'assets/[name][extname]';
