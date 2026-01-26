@@ -656,6 +656,7 @@ describe('ToolbarStateManager', () => {
   describe('cookie sync', () => {
     beforeEach(() => {
       // Clear any existing cookies
+      // biome-ignore lint/suspicious/noDocumentCookie: Test cleanup
       document.cookie = 'unleash-toolbar-state=; path=/; max-age=0';
     });
 

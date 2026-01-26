@@ -75,6 +75,7 @@ describe('Next.js Server Integration', () => {
   describe('applyToolbarOverrides', () => {
     it('should return original definitions when no cookie present', () => {
       const definitions = {
+        version: 1,
         features: [{ name: 'test-flag', enabled: false, strategies: [] }],
       };
 
@@ -106,13 +107,14 @@ describe('Next.js Server Integration', () => {
       };
 
       const definitions = {
+        version: 1,
         features: [{ name: 'test-flag', enabled: false, strategies: [] }],
       };
 
       const result = applyToolbarOverrides(definitions, cookieStore);
 
-      expect(result.features[0].enabled).toBe(true);
-      expect(result.features[0].strategies).toEqual([
+      expect(result.features?.[0].enabled).toBe(true);
+      expect(result.features?.[0].strategies).toEqual([
         { name: 'default', parameters: {}, constraints: [] },
       ]);
     });
@@ -137,13 +139,20 @@ describe('Next.js Server Integration', () => {
       };
 
       const definitions = {
-        features: [{ name: 'test-flag', enabled: true, strategies: [{ name: 'default' }] }],
+        version: 1,
+        features: [
+          {
+            name: 'test-flag',
+            enabled: true,
+            strategies: [{ name: 'default', parameters: {}, constraints: [] }],
+          },
+        ],
       };
 
       const result = applyToolbarOverrides(definitions, cookieStore);
 
-      expect(result.features[0].enabled).toBe(false);
-      expect(result.features[0].strategies).toEqual([]);
+      expect(result.features?.[0].enabled).toBe(false);
+      expect(result.features?.[0].strategies).toEqual([]);
     });
 
     it('should apply variant override', () => {
@@ -166,6 +175,7 @@ describe('Next.js Server Integration', () => {
       };
 
       const definitions = {
+        version: 1,
         features: [
           {
             name: 'test-variant',
@@ -181,10 +191,24 @@ describe('Next.js Server Integration', () => {
 
       const result = applyToolbarOverrides(definitions, cookieStore);
 
-      expect(result.features[0].enabled).toBe(true);
-      expect(result.features[0].variants).toEqual([
-        { name: 'control', weight: 0, weightType: 'fix' },
-        { name: 'variant-a', weight: 1000, weightType: 'fix' },
+      expect(result.features?.[0].enabled).toBe(true);
+      expect(result.features?.[0].variants).toEqual([
+        {
+          name: 'control',
+          weight: 0,
+          weightType: 'variable',
+          stickiness: undefined,
+          payload: undefined,
+          overrides: undefined,
+        },
+        {
+          name: 'variant-a',
+          weight: 1000,
+          weightType: 'variable',
+          stickiness: undefined,
+          payload: undefined,
+          overrides: undefined,
+        },
       ]);
     });
 
@@ -208,6 +232,7 @@ describe('Next.js Server Integration', () => {
       };
 
       const definitions = {
+        version: 1,
         features: [
           { name: 'flag-with-override', enabled: false },
           { name: 'flag-without-override', enabled: false },
@@ -216,15 +241,20 @@ describe('Next.js Server Integration', () => {
 
       const result = applyToolbarOverrides(definitions, cookieStore);
 
-      expect(result.features[0].enabled).toBe(true);
-      expect(result.features[1].enabled).toBe(false);
+      expect(result.features?.[0].enabled).toBe(true);
+      expect(result.features?.[1].enabled).toBe(false);
     });
   });
 
   describe('applyToolbarOverridesToToggles', () => {
     it('should return original toggles when no cookie present', () => {
       const toggles = [
-        { name: 'test-flag', enabled: false, variant: { name: 'disabled', enabled: false } },
+        {
+          name: 'test-flag',
+          enabled: false,
+          variant: { name: 'disabled', enabled: false },
+          impressionData: false,
+        },
       ];
 
       const cookieStore = {
@@ -255,7 +285,12 @@ describe('Next.js Server Integration', () => {
       };
 
       const toggles = [
-        { name: 'test-flag', enabled: false, variant: { name: 'disabled', enabled: false } },
+        {
+          name: 'test-flag',
+          enabled: false,
+          variant: { name: 'disabled', enabled: false },
+          impressionData: false,
+        },
       ];
 
       const result = applyToolbarOverridesToToggles(toggles, cookieStore);
@@ -287,14 +322,15 @@ describe('Next.js Server Integration', () => {
           name: 'test-variant',
           enabled: true,
           variant: { name: 'control', enabled: true, payload: { type: 'string', value: 'test' } },
+          impressionData: false,
         },
       ];
 
       const result = applyToolbarOverridesToToggles(toggles, cookieStore);
 
       expect(result[0].enabled).toBe(true);
-      expect(result[0].variant.name).toBe('variant-a');
-      expect(result[0].variant.enabled).toBe(true);
+      expect(result[0].variant?.name).toBe('variant-a');
+      expect(result[0].variant?.enabled).toBe(true);
     });
   });
 });
