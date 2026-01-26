@@ -31,8 +31,8 @@ export default function RootLayout({
       >
         <UnleashToolbarProvider
           config={{
-            url: process.env.NEXT_PUBLIC_UNLEASH_URL!,
-            clientKey: process.env.NEXT_PUBLIC_UNLEASH_CLIENT_KEY!,
+            url: process.env.NEXT_PUBLIC_UNLEASH_FRONTEND_API_URL!,
+            clientKey: process.env.NEXT_PUBLIC_UNLEASH_FRONTEND_API_TOKEN!,
             appName: process.env.NEXT_PUBLIC_UNLEASH_APP_NAME || 'nextjs-demo',
             environment: 'development',
             refreshInterval: 15,
