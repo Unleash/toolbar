@@ -9,10 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@unleash/proxy-client-react": "^5.0.1",
+    "@unleash/toolbar": "file:../..",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "unleash-proxy-client": "^3.7.8",
-    "@unleash/proxy-client-react": "^5.0.1"
+    "unleash-proxy-client": "^3.7.8"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
