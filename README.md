@@ -7,22 +7,30 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 - **Flag Overrides**: Force boolean flags ON/OFF or override variant values
 - **Context Overrides**: Modify userId, sessionId, environment, and custom properties
 - **Persistence**: Save overrides in memory, sessionStorage, or localStorage
+- **React Integration**: Seamlessly wraps the official `@unleash/proxy-client-react` SDK
+- **Next.js SSR Support**: Server-side rendering with cookie-based state sync using `@unleash/nextjs`
 - **Customizable UI**: Theming support and positioning options
-- **React Support**: Built-in hooks and provider component
-- **SDK Compatible**: Works with the Unleash JS SDK
+- **SDK Compatible**: Works with Unleash JavaScript SDK
 
 ## Bundle Size
 
 The toolbar is optimized for minimal impact on your application:
 
-- **JavaScript**: 27.4 KB uncompressed / 8.8 KB gzipped
-- **CSS**: 10 KB uncompressed / 2.4 KB gzipped
+- **Core**: ~8 KB gzipped
+- **React**: ~0.2 KB gzipped (thin wrapper)
+- **Next.js**: ~0.6 KB gzipped (server utilities)
+- **CSS**: ~2.4 KB gzipped
 
 ## Installation
 
 ```bash
-# note: this doesn't work yet
 npm install @unleash/toolbar
+
+# For React integration
+npm install @unleash/toolbar @unleash/proxy-client-react unleash-proxy-client
+
+# For Next.js SSR integration
+npm install @unleash/toolbar @unleash/nextjs
 ```
 
 ## Quick Start
@@ -141,28 +149,108 @@ const client = new UnleashClient({ /* config */ });
 ```
 ```
 
-### Next.js (Client Components)
+### Next.js App Router (Client & Server Components)
+
+The toolbar provides full Next.js App Router support with server-side rendering and cookie-based state synchronization.
+
+#### Client Components
 
 ```tsx
-'use client';
-
-import { UnleashToolbarProvider } from '@unleash/toolbar/react';
+// app/layout.tsx
+import { UnleashToolbarProvider } from '@unleash/toolbar/next';
 import '@unleash/toolbar/toolbar.css';
 
-const config = {
-  url: process.env.NEXT_PUBLIC_UNLEASH_URL,
-  clientKey: process.env.NEXT_PUBLIC_UNLEASH_CLIENT_KEY,
-  appName: 'my-next-app'
-};
-
-export function Providers({ children }) {
+export default function RootLayout({ children }) {
   return (
-    <UnleashToolbarProvider config={config}>
-      {children}
-    </UnleashToolbarProvider>
+    <html>
+      <body>
+        <UnleashToolbarProvider
+          config={{
+            url: process.env.NEXT_PUBLIC_UNLEASH_URL!,
+            clientKey: process.env.NEXT_PUBLIC_UNLEASH_CLIENT_KEY!,
+            appName: 'my-next-app',
+          }}
+        >
+          {children}
+        </UnleashToolbarProvider>
+      </body>
+    </html>
   );
 }
 ```
+
+```tsx
+// app/page.tsx
+'use client';
+
+import { useFlag, useVariant } from '@unleash/toolbar/next';
+
+export default function HomePage() {
+  const isEnabled = useFlag('new-checkout');
+  const variant = useVariant('payment-provider');
+
+  return (
+    <div>
+      {isEnabled && <NewCheckout />}
+      <PaymentForm provider={variant.name} />
+    </div>
+  );
+}
+```
+
+#### Server Components with SSR
+
+```tsx
+// app/server-page/page.tsx
+import { cookies } from 'next/headers';
+import { getDefinitions, evaluateFlags, flagsClient } from '@unleash/nextjs';
+import { applyToolbarOverrides } from '@unleash/toolbar/next/server';
+
+export default async function ServerPage() {
+  // Fetch definitions from Unleash API (uses env config)
+  const definitions = await getDefinitions({
+    fetchOptions: { next: { revalidate: 15 } },
+  });
+
+  // Apply toolbar overrides from cookies
+  const cookieStore = await cookies();
+  const modifiedDefinitions = applyToolbarOverrides(definitions, cookieStore);
+
+  // Evaluate flags with context
+  const { toggles } = evaluateFlags(modifiedDefinitions, {
+    sessionId: 'session-id',
+    userId: 'user-id',
+  });
+
+  // Create offline client
+  const flags = flagsClient(toggles);
+
+  // Check flags server-side
+  const isEnabled = flags.isEnabled('new-feature');
+
+  return <div>{isEnabled ? 'Feature ON' : 'Feature OFF'}</div>;
+}
+```
+
+**Environment Variables for Next.js:**
+```env
+# Used by @unleash/nextjs SDK
+UNLEASH_SERVER_API_URL=https://your-unleash-instance.com/api
+UNLEASH_SERVER_API_TOKEN=your-server-token
+UNLEASH_APP_NAME=my-app
+
+# Used by client-side toolbar
+NEXT_PUBLIC_UNLEASH_URL=https://your-unleash-instance.com/api/frontend
+NEXT_PUBLIC_UNLEASH_CLIENT_KEY=your-client-key
+NEXT_PUBLIC_UNLEASH_APP_NAME=my-app
+```
+
+**How it works:**
+1. Client-side toolbar automatically syncs state to cookies
+2. Server components read toolbar state from cookies
+3. `applyToolbarOverrides()` modifies flag definitions before evaluation
+4. Flags evaluate server-side with toolbar overrides applied
+5. Changes in toolbar immediately affect both client and server rendering
 
 ### Vue 3 (Composition API)
 
@@ -230,7 +318,35 @@ interface InitToolbarOptions {
   
   // Custom container element (default: document.body)
   container?: HTMLElement | null;
+
+  // Enable cookie sync for SSR (default: false)
+  // Set to true for Next.js or other SSR frameworks
+  enableCookieSync?: boolean;
 }
+```
+
+### Next.js Server Utilities
+
+```typescript
+import { applyToolbarOverrides, applyToolbarOverridesToToggles, getToolbarStateFromCookies } from '@unleash/toolbar/next/server';
+import type { ClientFeaturesResponse, IToggle } from '@unleash/nextjs';
+
+// Apply overrides before evaluation (recommended)
+const modifiedDefinitions = applyToolbarOverrides(
+  definitions: ClientFeaturesResponse,
+  cookieStore: CookieStore
+): ClientFeaturesResponse;
+
+// Apply overrides after evaluation (alternative)
+const modifiedToggles = applyToolbarOverridesToToggles(
+  toggles: IToggle[],
+  cookieStore: CookieStore
+): IToggle[];
+
+// Read toolbar state from cookies
+const state = getToolbarStateFromCookies(
+  cookieStore: CookieStore
+): ToolbarState | null;
 ```
 
 ### Storage Modes Explained
@@ -329,6 +445,17 @@ await updateContext({ userId: 'new-user-id' });
 const { flagsReady, flagsError } = useFlagsStatus();
 ```
 
+### Next.js Hooks
+
+For Next.js, import hooks from `@unleash/toolbar/next`, they're re-exported for convenience:
+
+```typescript
+import { useFlag, useVariant, useUnleashClient } from '@unleash/toolbar/next';
+
+const isEnabled = useFlag('my-feature');
+const variant = useVariant('my-experiment');
+```
+
 ## UI Features
 
 ### Flag List Tab
@@ -386,8 +513,23 @@ npm install
 # Build the library
 npm run build
 
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
 # Run type checking
 npm run type-check
+
+# Run linter
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
 ```
 
 ### Example Applications
@@ -396,15 +538,15 @@ The repository includes example applications demonstrating integration with diff
 
 - **Vanilla JS** - Basic HTML/JavaScript integration
   ```bash
-  npm run serve:example
+  npm run serve:example:vanilla
   ```
 
-- **React** - Hooks and provider pattern
+- **React** - Hooks and provider pattern with official React SDK
   ```bash
   npm run serve:example:react
   ```
 
-- **Next.js** - Server-side rendering with client components
+- **Next.js App Router** - Server-side rendering with client and server components
   ```bash
   npm run serve:example:nextjs
   ```
@@ -424,13 +566,19 @@ All examples include:
 - Multiple feature flags for testing
 - Variant flag demonstrations
 - Toolbar integration best practices
+- Server-side rendering examples (Next.js)
 
-## Browser Support
+## Requirements
 
-Works in all modern browsers:
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
+- **Browser**: Modern browsers with ES2020 support (Chrome 90+, Firefox 88+, Safari 14+)
+- **Unleash SDKs**:
+  - `unleash-proxy-client` ^3.0.0 (required)
+  - `@unleash/proxy-client-react` ^5.0.0 (optional, for React)
+  - `@unleash/nextjs` ^1.0.0 (optional, for Next.js SSR)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
@@ -439,5 +587,13 @@ Apache-2.0
 ## Links
 
 - [Unleash Documentation](https://docs.getunleash.io/)
-- [GitHub Repository](https://github.com/unleash/toolbar)
-- [Report Issues](https://github.com/unleash/toolbar/issues)
+- [Unleash JavaScript SDK](https://github.com/Unleash/unleash-proxy-client-js)
+- [Unleash React SDK](https://github.com/Unleash/proxy-client-react)
+- [Unleash Next.js SDK](https://github.com/Unleash/unleash-nextjs-sdk)
+- [npm Package](https://www.npmjs.com/package/@unleash/toolbar)
+
+## Support
+
+- [GitHub Issues](https://github.com/Unleash/toolbar/issues)
+- [Unleash Slack Community](https://unleash-community.slack.com/)
+- [Unleash Documentation](https://docs.getunleash.io/)
