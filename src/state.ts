@@ -13,10 +13,28 @@ import type {
 /**
  * Helper to set a cookie with proper encoding
  */
-function setCookie(name: string, value: string, maxAgeSeconds: number): void {
+async function setCookie(name: string, value: string, maxAgeSeconds: number): Promise<void> {
   if (typeof document === 'undefined') return;
 
   const encodedValue = encodeURIComponent(value);
+
+  // Use Cookie Store API if available, fallback to document.cookie
+  if ('cookieStore' in window) {
+    try {
+      await window.cookieStore.set({
+        name,
+        value: encodedValue,
+        path: '/',
+        sameSite: 'lax',
+        expires: Date.now() + maxAgeSeconds * 1000,
+      });
+      return;
+    } catch {
+      // Fallback to document.cookie if Cookie Store API fails
+    }
+  }
+
+  // Fallback for browsers without Cookie Store API
   const cookieParts = [
     `${name}=${encodedValue}`,
     'path=/',
@@ -24,14 +42,28 @@ function setCookie(name: string, value: string, maxAgeSeconds: number): void {
     'SameSite=Lax',
   ];
 
+  // biome-ignore lint/suspicious/noDocumentCookie: Fallback for browsers without Cookie Store API
   document.cookie = cookieParts.join('; ');
 }
 
 /**
  * Helper to delete a cookie
  */
-function deleteCookie(name: string): void {
+async function deleteCookie(name: string): Promise<void> {
   if (typeof document === 'undefined') return;
+
+  // Use Cookie Store API if available, fallback to document.cookie
+  if ('cookieStore' in window) {
+    try {
+      await window.cookieStore.delete(name);
+      return;
+    } catch {
+      // Fallback to document.cookie if Cookie Store API fails
+    }
+  }
+
+  // Fallback for browsers without Cookie Store API
+  // biome-ignore lint/suspicious/noDocumentCookie: Fallback for browsers without Cookie Store API
   document.cookie = `${name}=; path=/; max-age=0`;
 }
 
@@ -462,6 +494,6 @@ export class ToolbarStateManager {
    * Should be called by Next.js integration when SSR is needed
    */
   enableCookieSync(): void {
-    this.storage['setCookieSyncEnabled'](true);
+    this.storage.setCookieSyncEnabled(true);
   }
 }
