@@ -1,6 +1,6 @@
 {
   "name": "@unleash/toolbar",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Client-side override toolbar for Unleash JavaScript SDKs",
   "type": "module",
   "main": "./dist/index.es.js",
@@ -47,11 +47,20 @@
   "keywords": [
     "unleash",
     "feature-flags",
+    "feature-toggles",
     "debugging",
     "toolbar",
-    "override"
+    "override",
+    "react",
+    "nextjs",
+    "ssr",
+    "development-tools"
   ],
-  "author": "",
+  "author": "Unleash",
+  "bugs": {
+    "url": "https://github.com/Unleash/toolbar/issues"
+  },
+  "homepage": "https://github.com/Unleash/toolbar",
   "license": "Apache-2.0",
   "peerDependencies": {
     "unleash-proxy-client": "^3.0.0"
