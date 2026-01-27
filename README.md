@@ -147,7 +147,7 @@ const client = new UnleashClient({ /* config */ });
   <MyApp />
 </UnleashToolbarProvider>
 ```
-```
+
 
 ### Next.js App Router (Client & Server Components)
 
@@ -233,6 +233,7 @@ export default async function ServerPage() {
 ```
 
 **Environment Variables for Next.js:**
+
 ```env
 # Used by @unleash/nextjs SDK
 UNLEASH_SERVER_API_URL=https://your-unleash-instance.com/api
