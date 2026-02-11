@@ -2,6 +2,8 @@
 
 A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) feature flags. Override flag values and context in real-time without server changes.
 
+![Unleash Toolbar Screenshot](toolbar.png)
+
 ## Features
 
 - **Flag Overrides**: Force boolean flags ON/OFF or override variant values
