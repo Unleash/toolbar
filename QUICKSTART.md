@@ -41,54 +41,72 @@ client.on('update', () => {
 ### 2. React
 
 ```tsx
-// In your root component (App.tsx or layout)
+// In your root component (App.tsx)
 import { UnleashToolbarProvider } from '@unleash/toolbar/react';
 import '@unleash/toolbar/toolbar.css';
 
+// Same config format as the official React SDK
+const config = {
+  url: 'https://your-unleash-instance.com/api/frontend',
+  clientKey: 'your-client-key',
+  appName: 'my-app',
+  refreshInterval: 15
+};
+
 function App() {
   return (
-    <UnleashToolbarProvider client={unleashClient}>
-      {/* Your app */}
+    <UnleashToolbarProvider
+      config={config}
+      toolbarOptions={{
+        storageMode: 'local',
+        position: 'bottom-right'
+      }}
+    >
+      <MyComponent />
     </UnleashToolbarProvider>
   );
 }
 
-// In your components
-import { useFlag } from '@unleash/toolbar/react';
+// In your components - use hooks from @unleash/proxy-client-react
+import { useFlag, useVariant } from '@unleash/proxy-client-react';
 
 function MyComponent() {
   const isEnabled = useFlag('my-feature');
+  const variant = useVariant('my-experiment');
   
-  return isEnabled ? <NewFeature /> : <OldFeature />;
+  return (
+    <div>
+      {isEnabled && <NewFeature />}
+      {variant.name === 'variant-a' && <VariantA />}
+    </div>
+  );
 }
 ```
 
 ### 3. Next.js App Router
 
 ```tsx
-// app/providers.tsx
-'use client';
-
-import { UnleashToolbarProvider } from '@unleash/toolbar/react';
-import { unleashClient } from '@/lib/unleash';
-
-export function Providers({ children }) {
-  return (
-    <UnleashToolbarProvider client={unleashClient}>
-      {children}
-    </UnleashToolbarProvider>
-  );
-}
-
 // app/layout.tsx
-import { Providers } from './providers';
+import { UnleashToolbarProvider } from '@unleash/toolbar/next';
 import '@unleash/toolbar/toolbar.css';
 
 export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <Providers>{children}</Providers>
+        <UnleashToolbarProvider
+          config={{
+            url: process.env.NEXT_PUBLIC_UNLEASH_URL!,
+            clientKey: process.env.NEXT_PUBLIC_UNLEASH_CLIENT_KEY!,
+            appName: 'my-next-app',
+          }}
+          toolbarOptions={{
+            storageMode: 'local',
+            position: 'bottom-right'
+          }}
+        >
+          {children}
+        </UnleashToolbarProvider>
       </body>
     </html>
   );
@@ -96,11 +114,50 @@ export default function RootLayout({ children }) {
 
 // In any client component
 'use client';
-import { useFlag } from '@unleash/toolbar/react';
+import { useFlag, useVariant } from '@unleash/toolbar/next';
 
 export function MyComponent() {
   const isEnabled = useFlag('my-feature');
-  // ...
+  const variant = useVariant('payment-provider');
+
+  return (
+    <div>
+      {isEnabled && <NewFeature />}
+      <PaymentForm provider={variant.name} />
+    </div>
+  );
+}
+
+// In server components - use with @unleash/nextjs SDK
+import { cookies } from 'next/headers';
+import { getDefinitions, evaluateFlags, flagsClient } from '@unleash/nextjs';
+import { applyToolbarOverrides } from '@unleash/toolbar/next/server';
+
+export default async function ServerPage() {
+  // Get definitions from Unleash (uses env configuration)
+  const definitions = await getDefinitions();
+
+  // Apply toolbar overrides from cookies
+  const cookieStore = await cookies();
+  const modifiedDefinitions = applyToolbarOverrides(definitions, cookieStore);
+
+  // Evaluate flags with context
+  const { toggles } = evaluateFlags(modifiedDefinitions, {
+    userId: 'user-123',
+    sessionId: 'session-abc',
+  });
+
+  // Create offline client for flag checks
+  const flags = flagsClient(toggles);
+  const isEnabled = flags.isEnabled('my-feature');
+  const variant = flags.getVariant('payment-provider');
+
+  return (
+    <div>
+      {isEnabled && <NewFeature />}
+      <PaymentForm provider={variant.name} />
+    </div>
+  );
 }
 ```
 
@@ -209,9 +266,10 @@ const client = initUnleashToolbar(new UnleashClient({...}), {
 - Verify overrides are set (they show up in the toolbar UI)
 
 ### React Hooks Not Re-rendering
-- Ensure you're using hooks from `@unleash/toolbar/react`
+- For React: Use hooks from `@unleash/proxy-client-react` (the official SDK)
+- For Next.js: Use hooks from `@unleash/toolbar/next`
 - Verify you wrapped your app with `<UnleashToolbarProvider>`
-- Check that the client is properly passed to the provider
+- Check that you passed `config` (or `client`) to the provider
 - The provider automatically listens to `client.on('update')` events
 
 ## Next Steps
