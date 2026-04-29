@@ -39,7 +39,7 @@
     "unleash-proxy-client": "^3.7.8"
   },
   "devDependencies": {
-    "@angular/build": "^21.2.2",
+    "@angular/build": "^21.2.8",
     "@angular/cli": "^21.2.2",
     "@angular/compiler-cli": "^21.2.4",
     "esbuild": ">=0.25.0",
