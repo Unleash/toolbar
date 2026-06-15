@@ -24,7 +24,10 @@
   "packageManager": "npm@11.6.1",
   "overrides": {
     "undici": ">=7.24.0",
-    "picomatch": ">=4.0.4"
+    "picomatch": ">=4.0.4",
+    "@babel/core": "^7.29.6",
+    "esbuild": "^0.28.1",
+    "vite": ">=8.0.5"
   },
   "dependencies": {
     "@angular/common": "^21.2.17",
@@ -42,7 +45,6 @@
     "@angular/build": "^21.2.15",
     "@angular/cli": "^21.2.15",
     "@angular/compiler-cli": "^21.2.17",
-    "esbuild": ">=0.25.0",
     "jsdom": "^27.1.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
