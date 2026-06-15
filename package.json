@@ -97,7 +97,7 @@
     "typescript-eslint": "^8.49.0",
     "unleash-client": "^6.9.3",
     "unleash-proxy-client": "^3.4.1",
-    "vite": "^7.2.7",
+    "vite": "^8.0.16",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.0.15"
   },
