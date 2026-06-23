@@ -27,7 +27,8 @@
     "picomatch": ">=4.0.4",
     "@babel/core": "^7.29.6",
     "esbuild": "^0.28.1",
-    "vite": ">=8.0.5"
+    "vite": ">=8.0.5",
+    "piscina": ">=5.2.0"
   },
   "dependencies": {
     "@angular/common": "^21.2.17",
