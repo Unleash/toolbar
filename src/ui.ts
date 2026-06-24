@@ -281,8 +281,16 @@ export class ToolbarUI implements IToolbarUI {
   private computeIconCoords(drag: DragPosition): { left: number; top: number } {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const alongX = clamp(drag.offset * (vw - TOGGLE_SIZE), EDGE_MARGIN, vw - TOGGLE_SIZE - EDGE_MARGIN);
-    const alongY = clamp(drag.offset * (vh - TOGGLE_SIZE), EDGE_MARGIN, vh - TOGGLE_SIZE - EDGE_MARGIN);
+    const alongX = clamp(
+      drag.offset * (vw - TOGGLE_SIZE),
+      EDGE_MARGIN,
+      vw - TOGGLE_SIZE - EDGE_MARGIN,
+    );
+    const alongY = clamp(
+      drag.offset * (vh - TOGGLE_SIZE),
+      EDGE_MARGIN,
+      vh - TOGGLE_SIZE - EDGE_MARGIN,
+    );
 
     switch (drag.edge) {
       case 'top':
