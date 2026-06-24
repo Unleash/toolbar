@@ -208,6 +208,9 @@ const client = initUnleashToolbar(new UnleashClient({...}), {
   // Start visible or hidden (default: true, respects persisted state)
   initiallyVisible: false,
   
+  // Optional message shown as a banner below the header (empty by default)
+  banner: 'Only client-side flags are overridable here.',
+  
   // Sort flags alphabetically (default: false)
   sortAlphabetically: true,
   

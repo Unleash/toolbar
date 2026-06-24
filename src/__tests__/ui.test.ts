@@ -211,6 +211,52 @@ describe('ToolbarUI', () => {
     });
   });
 
+  describe('banner', () => {
+    it('should not render a banner by default', () => {
+      new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
+
+      expect(container.querySelector('.ut-banner')).toBeFalsy();
+    });
+
+    it('should render the banner message when provided', () => {
+      const message = 'Only client-side flags are overridable here.';
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: message,
+      });
+
+      const banner = container.querySelector('.ut-banner');
+      expect(banner).toBeTruthy();
+      expect(banner?.textContent?.trim()).toBe(message);
+    });
+
+    it('should not render a banner for an empty string', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: '',
+      });
+
+      expect(container.querySelector('.ut-banner')).toBeFalsy();
+    });
+
+    it('should render the banner regardless of the active tab', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: 'Heads up',
+      });
+
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
+      ) as HTMLElement;
+      contextTab?.click();
+
+      expect(container.querySelector('.ut-banner')?.textContent?.trim()).toBe('Heads up');
+    });
+  });
+
   describe('tabs navigation', () => {
     it('should render flags tab by default', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
