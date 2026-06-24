@@ -1,6 +1,7 @@
 import { html, render } from 'lit-html';
 import type { ToolbarStateManager } from './state';
 import type {
+  DragPosition,
   FlagValue,
   InitToolbarOptions,
   IToolbarUI,
@@ -11,6 +12,60 @@ import type {
 
 // Unleash logo from CDN
 const UNLEASH_LOGO = 'https://cdn.getunleash.io/docs-assets/unleash_logo_icon.svg';
+
+// Layout constants shared by drag/positioning logic
+const EDGE_MARGIN = 20; // px gap kept between the toolbar and the window edge
+const TOGGLE_SIZE = 48; // px width/height of the floating toggle icon
+const PANEL_WIDTH = 400; // px width of the expanded panel (matches CSS)
+const DRAG_THRESHOLD = 4; // px of movement before a pointer-drag begins
+
+const POSITION_CLASSES = [
+  'position-top-left',
+  'position-top-right',
+  'position-bottom-left',
+  'position-bottom-right',
+  'position-left',
+  'position-right',
+];
+
+const clamp = (value: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, value));
+
+/**
+ * Determine which window edge a dragged toolbar should snap to, and where along
+ * that edge it sits. Pure function so it can be unit-tested independently.
+ *
+ * @param left/top - top-left corner of the dragged element (viewport coords)
+ * @param width/height - size of the dragged element
+ * @param vw/vh - viewport dimensions
+ */
+export function computeDragPosition(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  vw: number,
+  vh: number,
+): DragPosition {
+  const centerX = left + width / 2;
+  const centerY = top + height / 2;
+
+  const distLeft = centerX;
+  const distRight = vw - centerX;
+  const distTop = centerY;
+  const distBottom = vh - centerY;
+  const nearest = Math.min(distLeft, distRight, distTop, distBottom);
+
+  // Offsets are stored as a fraction of the available travel along the edge so
+  // the position stays proportional when the window is resized.
+  const offsetX = vw > width ? clamp(left / (vw - width), 0, 1) : 0;
+  const offsetY = vh > height ? clamp(top / (vh - height), 0, 1) : 0;
+
+  if (nearest === distTop) return { edge: 'top', offset: offsetX };
+  if (nearest === distBottom) return { edge: 'bottom', offset: offsetX };
+  if (nearest === distLeft) return { edge: 'left', offset: offsetY };
+  return { edge: 'right', offset: offsetY };
+}
 
 /**
  * Create the toolbar UI component using Lit
@@ -25,6 +80,20 @@ export class ToolbarUI implements IToolbarUI {
   private customTheme?: InitToolbarOptions['theme'];
   private originalBaseContext: Partial<UnleashContext>;
   private searchQuery: string = '';
+  private draggable: boolean;
+
+  // Ephemeral "fully hidden" state (NOT persisted): the toolbar reappears on
+  // the next page load. Set via the header's close (×) button.
+  private hiddenCompletely = false;
+
+  // Drag bookkeeping
+  private isDragging = false;
+  private dragMoved = false;
+  private suppressClick = false;
+  private dragGrabX = 0;
+  private dragGrabY = 0;
+  private dragStartX = 0;
+  private dragStartY = 0;
 
   constructor(
     stateManager: ToolbarStateManager,
@@ -35,6 +104,7 @@ export class ToolbarUI implements IToolbarUI {
     this.position = options.position || 'bottom-right';
     this.themePreset = options.themePreset || 'light';
     this.customTheme = options.theme;
+    this.draggable = options.draggable ?? true;
 
     // Capture original base context before any overrides are applied
     this.originalBaseContext = wrappedClient.__original.getContext();
@@ -49,9 +119,10 @@ export class ToolbarUI implements IToolbarUI {
       this.stateManager.setVisibility(isVisible);
     }
 
-    // Create single root container
+    // Create single root container. The position (preset class or dragged
+    // coordinates) is managed by applyPosition(), called from render().
     this.rootElement = document.createElement('div');
-    this.rootElement.className = `unleash-toolbar-container position-${this.position}`;
+    this.rootElement.className = 'unleash-toolbar-container';
     if (this.themePreset === 'dark') {
       this.rootElement.classList.add('ut-theme-dark');
     }
@@ -66,9 +137,18 @@ export class ToolbarUI implements IToolbarUI {
       this.render();
     });
 
+    // Keep a dragged position on-screen when the window is resized
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.handleResize);
+    }
+
     // Initial render
     this.render();
   }
+
+  private handleResize = (): void => {
+    if (!this.isDragging) this.applyPosition();
+  };
 
   private applyCustomTheme(element: HTMLElement): void {
     if (!this.customTheme) return;
@@ -85,6 +165,7 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   show(): void {
+    this.hiddenCompletely = false;
     this.stateManager.setVisibility(true);
     this.render();
   }
@@ -94,7 +175,29 @@ export class ToolbarUI implements IToolbarUI {
     this.render();
   }
 
+  /**
+   * Collapse the panel down to the floating toggle icon (persisted).
+   * Triggered by the header's minimize (_) button.
+   */
+  private minimize(): void {
+    this.hide();
+  }
+
+  /**
+   * Hide the toolbar entirely — both panel and floating icon. This state is
+   * ephemeral and intentionally NOT persisted, so a page refresh brings the
+   * toolbar back. Triggered by the header's close (×) button.
+   */
+  private hideCompletely(): void {
+    this.hiddenCompletely = true;
+    this.render();
+  }
+
   destroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.handleResize);
+    }
+    this.removeDragListeners();
     this.rootElement.remove();
   }
 
@@ -103,20 +206,25 @@ export class ToolbarUI implements IToolbarUI {
     const flagNames = this.stateManager.getFlagNames();
     const isVisible = this.stateManager.getVisibility();
 
+    // Three states: fully hidden (nothing shown), collapsed (toggle icon), open (panel)
+    const showToggle = !isVisible && !this.hiddenCompletely;
+    const showPanel = isVisible && !this.hiddenCompletely;
+
     // Single unified template for everything
     const template = html`
-      <button 
-        class="ut-toggle" 
-        style=${isVisible ? 'display: none;' : 'display: flex;'}
-        @click=${() => this.show()}
-        title="Open Unleash Toolbar"
+      <button
+        class="ut-toggle${this.draggable ? ' ut-draggable' : ''}"
+        style=${showToggle ? 'display: flex;' : 'display: none;'}
+        @pointerdown=${(e: PointerEvent) => this.onTogglePointerDown(e)}
+        @click=${() => this.onToggleClick()}
+        title=${this.draggable ? 'Open Unleash Toolbar (drag to move)' : 'Open Unleash Toolbar'}
       >
         <img src="${UNLEASH_LOGO}" alt="Unleash" />
       </button>
 
-      <div 
-        class="unleash-toolbar" 
-        style=${isVisible ? 'display: flex;' : 'display: none;'}
+      <div
+        class="unleash-toolbar"
+        style=${showPanel ? 'display: flex;' : 'display: none;'}
       >
         ${this.renderHeader(state)}
         ${this.renderTabsNavigation()}
@@ -132,6 +240,156 @@ export class ToolbarUI implements IToolbarUI {
     `;
 
     render(template, this.rootElement);
+    this.applyPosition();
+  }
+
+  /**
+   * Apply the toolbar position to the root container. When the user has dragged
+   * the toolbar, position via inline coordinates; otherwise fall back to the
+   * preset position-* class from the `position` option.
+   */
+  private applyPosition(): void {
+    const root = this.rootElement;
+    const drag = this.stateManager.getDragPosition();
+
+    // Reset any inline coordinates before re-applying
+    root.style.top = '';
+    root.style.bottom = '';
+    root.style.left = '';
+    root.style.right = '';
+    root.classList.remove(...POSITION_CLASSES);
+
+    if (!drag) {
+      root.classList.add(`position-${this.position}`);
+      return;
+    }
+
+    const coords = this.stateManager.getVisibility()
+      ? this.computePanelCoords(drag)
+      : this.computeIconCoords(drag);
+
+    for (const [prop, value] of Object.entries(coords)) {
+      root.style.setProperty(prop, `${value}px`);
+    }
+  }
+
+  /** Inline coordinates for the collapsed floating icon at a dragged position */
+  private computeIconCoords(drag: DragPosition): Record<string, number> {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const max = (size: number) => (axis: number) =>
+      clamp(drag.offset * (axis - size), EDGE_MARGIN, axis - size - EDGE_MARGIN);
+
+    if (drag.edge === 'top') return { top: EDGE_MARGIN, left: max(TOGGLE_SIZE)(vw) };
+    if (drag.edge === 'bottom') return { bottom: EDGE_MARGIN, left: max(TOGGLE_SIZE)(vw) };
+    if (drag.edge === 'left') return { left: EDGE_MARGIN, top: max(TOGGLE_SIZE)(vh) };
+    return { right: EDGE_MARGIN, top: max(TOGGLE_SIZE)(vh) };
+  }
+
+  /**
+   * Inline coordinates for the expanded panel at a dragged position. The panel
+   * hugs the same edge as the icon and is centered near the icon's offset, then
+   * clamped so the 400px-wide panel never overflows the viewport.
+   */
+  private computePanelCoords(drag: DragPosition): Record<string, number> {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const panelHeight = Math.min(700, vh * 0.85);
+
+    if (drag.edge === 'top' || drag.edge === 'bottom') {
+      const iconLeft = drag.offset * (vw - TOGGLE_SIZE);
+      const left = clamp(
+        iconLeft + TOGGLE_SIZE / 2 - PANEL_WIDTH / 2,
+        EDGE_MARGIN,
+        vw - PANEL_WIDTH - EDGE_MARGIN,
+      );
+      return drag.edge === 'top' ? { top: EDGE_MARGIN, left } : { bottom: EDGE_MARGIN, left };
+    }
+
+    const iconTop = drag.offset * (vh - TOGGLE_SIZE);
+    const top = clamp(
+      iconTop + TOGGLE_SIZE / 2 - panelHeight / 2,
+      EDGE_MARGIN,
+      vh - panelHeight - EDGE_MARGIN,
+    );
+    return drag.edge === 'left' ? { left: EDGE_MARGIN, top } : { right: EDGE_MARGIN, top };
+  }
+
+  // --- Floating toggle: click to open + optional drag-to-move ---
+
+  private onToggleClick(): void {
+    // A drag just finished — swallow the click so it doesn't open the panel
+    if (this.suppressClick) {
+      this.suppressClick = false;
+      return;
+    }
+    this.show();
+  }
+
+  private onTogglePointerDown(e: PointerEvent): void {
+    if (!this.draggable || e.button !== 0) return;
+
+    const rect = this.rootElement.getBoundingClientRect();
+    this.dragGrabX = e.clientX - rect.left;
+    this.dragGrabY = e.clientY - rect.top;
+    this.dragStartX = e.clientX;
+    this.dragStartY = e.clientY;
+    this.isDragging = true;
+    this.dragMoved = false;
+
+    document.addEventListener('pointermove', this.onPointerMove);
+    document.addEventListener('pointerup', this.onPointerUp);
+  }
+
+  private onPointerMove = (e: PointerEvent): void => {
+    if (!this.isDragging) return;
+
+    if (!this.dragMoved) {
+      const dx = e.clientX - this.dragStartX;
+      const dy = e.clientY - this.dragStartY;
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      this.dragMoved = true;
+      this.rootElement.classList.add('ut-dragging');
+      this.rootElement.classList.remove(...POSITION_CLASSES);
+    }
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const left = clamp(e.clientX - this.dragGrabX, EDGE_MARGIN, vw - TOGGLE_SIZE - EDGE_MARGIN);
+    const top = clamp(e.clientY - this.dragGrabY, EDGE_MARGIN, vh - TOGGLE_SIZE - EDGE_MARGIN);
+
+    const root = this.rootElement;
+    root.style.right = '';
+    root.style.bottom = '';
+    root.style.left = `${left}px`;
+    root.style.top = `${top}px`;
+  };
+
+  private onPointerUp = (): void => {
+    if (!this.isDragging) return;
+    this.isDragging = false;
+    this.removeDragListeners();
+    this.rootElement.classList.remove('ut-dragging');
+
+    if (!this.dragMoved) return; // treat as a plain click → onToggleClick opens it
+
+    this.suppressClick = true;
+    const rect = this.rootElement.getBoundingClientRect();
+    const position = computeDragPosition(
+      rect.left,
+      rect.top,
+      rect.width || TOGGLE_SIZE,
+      rect.height || TOGGLE_SIZE,
+      window.innerWidth,
+      window.innerHeight,
+    );
+    this.stateManager.setDragPosition(position);
+    this.render();
+  };
+
+  private removeDragListeners(): void {
+    document.removeEventListener('pointermove', this.onPointerMove);
+    document.removeEventListener('pointerup', this.onPointerUp);
   }
 
   private renderHeader(state: ToolbarState) {
@@ -147,7 +405,20 @@ export class ToolbarUI implements IToolbarUI {
             <div class="ut-title-sub">${flagCount} flags • ${overrideCount} overrides</div>
           </div>
         </div>
-        <button class="ut-btn-close" @click=${() => this.hide()} title="Close toolbar">×</button>
+        <div class="ut-header-actions">
+          <button
+            class="ut-btn-close ut-btn-minimize"
+            @click=${() => this.minimize()}
+            title="Minimize to floating icon"
+            aria-label="Minimize toolbar"
+          ><span class="ut-minimize-glyph"></span></button>
+          <button
+            class="ut-btn-close"
+            @click=${() => this.hideCompletely()}
+            title="Hide until page refresh"
+            aria-label="Hide toolbar"
+          >×</button>
+        </div>
       </div>
     `;
   }

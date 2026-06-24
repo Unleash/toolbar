@@ -58,6 +58,20 @@ export interface ToolbarState {
   };
   contextOverrides: Partial<UnleashContext>;
   isVisible?: boolean;
+  /** Persisted position set by dragging the toolbar (overrides the init `position` option) */
+  dragPosition?: DragPosition;
+}
+
+/**
+ * A toolbar position set by dragging.
+ *
+ * The toolbar is constrained to one of the four window edges; `offset` is a
+ * fraction (0..1) describing where along that edge it sits, so the position
+ * stays proportional when the window is resized.
+ */
+export interface DragPosition {
+  edge: 'top' | 'right' | 'bottom' | 'left';
+  offset: number;
 }
 
 /**
@@ -112,6 +126,11 @@ export interface InitToolbarOptions {
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left' | 'right';
   /** Whether toolbar is visible on initialization (default: true, but respects persisted state if available) */
   initiallyVisible?: boolean;
+  /**
+   * Allow the user to drag the floating toggle icon to reposition the toolbar
+   * along any window edge. The chosen position is persisted. (default: true)
+   */
+  draggable?: boolean;
   /** Sort flags alphabetically instead of by evaluation order (default: false) */
   sortAlphabetically?: boolean;
   /** Enable cookie synchronization for server-side rendering (Next.js) (default: false) */

@@ -272,6 +272,44 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Header actions: minimize (_) + hide (×) */
+.unleash-toolbar .ut-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Minimize button renders a small bar that reads as "_" / minimize */
+.unleash-toolbar .ut-minimize-glyph {
+  display: block;
+  width: 10px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+/* Drag-to-move affordance on the floating toggle */
+.unleash-toolbar-container .ut-toggle.ut-draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.unleash-toolbar-container .ut-toggle.ut-draggable:active {
+  cursor: grabbing;
+}
+
+/* While actively dragging: no transitions/selection, no hover scale */
+.unleash-toolbar-container.ut-dragging {
+  transition: none;
+  user-select: none;
+}
+
+.unleash-toolbar-container.ut-dragging .ut-toggle {
+  transition: none;
+  transform: none;
+}
+
 .unleash-toolbar .ut-tabs {
   display: flex;
   background: var(--ut-bg);

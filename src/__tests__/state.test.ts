@@ -545,6 +545,24 @@ describe('ToolbarStateManager', () => {
     });
   });
 
+  describe('drag position', () => {
+    it('should set and get drag position', () => {
+      stateManager.setDragPosition({ edge: 'left', offset: 0.25 });
+      expect(stateManager.getDragPosition()).toEqual({ edge: 'left', offset: 0.25 });
+    });
+
+    it('should persist drag position', () => {
+      stateManager.setDragPosition({ edge: 'top', offset: 0.5 });
+
+      const persisted = JSON.parse(localStorage.getItem('test-toolbar-state') || '{}');
+      expect(persisted.dragPosition).toEqual({ edge: 'top', offset: 0.5 });
+    });
+
+    it('should return undefined when not set', () => {
+      expect(stateManager.getDragPosition()).toBeUndefined();
+    });
+  });
+
   describe('storage modes', () => {
     it('should use sessionStorage when storageMode is session', () => {
       const sessionManager = new ToolbarStateManager('session', 'test-session-state', false);
