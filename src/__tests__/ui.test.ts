@@ -322,6 +322,51 @@ describe('ToolbarUI', () => {
       expect(metadata?.override).toBeNull();
     });
 
+    it('should force the flag ON when the ON button is clicked', () => {
+      stateManager.recordEvaluation('test-flag', 'flag', false, false, {});
+
+      new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
+
+      const onButton = Array.from(container.querySelectorAll('.ut-toggle-btn')).find(
+        (btn) => btn.textContent === 'ON',
+      ) as HTMLElement;
+      onButton?.click();
+
+      expect(stateManager.getFlagMetadata('test-flag')?.override).toEqual({
+        type: 'flag',
+        value: true,
+      });
+    });
+
+    it('should set and then clear a variant override via its buttons', () => {
+      stateManager.recordEvaluation(
+        'variant-flag',
+        'variant',
+        { name: 'control', enabled: true },
+        { name: 'control', enabled: true },
+        {},
+      );
+
+      new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
+
+      // No override yet → "Override Variant" sets a default variant override
+      const overrideBtn = Array.from(container.querySelectorAll('.ut-btn-small')).find((b) =>
+        b.textContent?.includes('Override Variant'),
+      ) as HTMLElement;
+      overrideBtn.click();
+      expect(stateManager.getFlagMetadata('variant-flag')?.override).toEqual({
+        type: 'variant',
+        variantKey: 'default',
+      });
+
+      // Now "Clear Override" removes it
+      const clearBtn = Array.from(container.querySelectorAll('.ut-btn-small')).find((b) =>
+        b.textContent?.includes('Clear Override'),
+      ) as HTMLElement;
+      clearBtn.click();
+      expect(stateManager.getFlagMetadata('variant-flag')?.override).toBeNull();
+    });
+
     it('should render variant control for variant flags', () => {
       stateManager.recordEvaluation(
         'test-flag',
@@ -931,6 +976,121 @@ describe('ToolbarUI', () => {
       const pos = computeDragPosition(5, -100, 48, 48, 1000, 800);
       expect(pos.offset).toBeGreaterThanOrEqual(0);
       expect(pos.offset).toBeLessThanOrEqual(1);
+    });
+
+    it('returns a zero offset when the element is wider than the viewport', () => {
+      // vw <= width / vh <= height → no travel room, offset defaults to 0
+      const pos = computeDragPosition(0, 0, 48, 48, 40, 40);
+      expect(pos.offset).toBe(0);
+    });
+  });
+
+  // jsdom viewport defaults to 1024x768; element 48px, margin 20px
+  describe('edge positioning', () => {
+    const edges = [
+      { edge: 'top', icon: { axis: 'top', px: '20px' }, panel: { axis: 'top', value: 20 } },
+      { edge: 'bottom', icon: { axis: 'top', px: '700px' }, panel: { axis: 'top', value: 95.2 } },
+      { edge: 'left', icon: { axis: 'left', px: '20px' }, panel: { axis: 'left', value: 20 } },
+      { edge: 'right', icon: { axis: 'left', px: '956px' }, panel: { axis: 'left', value: 604 } },
+    ] as const;
+
+    for (const { edge, icon, panel } of edges) {
+      it(`positions the collapsed icon against the ${edge} edge`, () => {
+        stateManager.setDragPosition({ edge, offset: 0.5 });
+        new ToolbarUI(stateManager, wrappedClient, { container });
+
+        const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+        expect(root.style[icon.axis]).toBe(icon.px);
+      });
+
+      it(`positions the open panel against the ${edge} edge`, () => {
+        stateManager.setDragPosition({ edge, offset: 0.5 });
+        new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
+
+        const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+        expect(Number.parseFloat(root.style[panel.axis])).toBeCloseTo(panel.value, 1);
+      });
+    }
+
+    it('repositions on window resize without throwing', () => {
+      stateManager.setDragPosition({ edge: 'right', offset: 0.5 });
+      new ToolbarUI(stateManager, wrappedClient, { container });
+      const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+
+      window.dispatchEvent(new Event('resize'));
+      expect(root.style.left).not.toBe('');
+    });
+  });
+
+  describe('drag edge cases', () => {
+    it('ignores non-primary (e.g. right) mouse buttons', () => {
+      new ToolbarUI(stateManager, wrappedClient, { container });
+      const toggle = container.querySelector('.ut-toggle') as HTMLElement;
+
+      toggle.dispatchEvent(
+        new MouseEvent('pointerdown', { clientX: 5, clientY: 5, button: 2, bubbles: true }),
+      );
+      document.dispatchEvent(
+        new MouseEvent('pointermove', { clientX: 200, clientY: 200, button: 2, bubbles: true }),
+      );
+      expect(stateManager.getDragPosition()).toBeUndefined();
+    });
+
+    it('cancels an in-flight snap when a new drag starts', () => {
+      new ToolbarUI(stateManager, wrappedClient, { container });
+      const toggle = container.querySelector('.ut-toggle') as HTMLElement;
+      const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+      const p = (type: string, x: number, y: number) =>
+        new MouseEvent(type, { clientX: x, clientY: y, button: 0, bubbles: true });
+
+      // First drag leaves a pending snap timer + ut-snapping class
+      toggle.dispatchEvent(p('pointerdown', 5, 5));
+      document.dispatchEvent(p('pointermove', 100, 100));
+      document.dispatchEvent(p('pointerup', 100, 100));
+      expect(root.classList.contains('ut-snapping')).toBe(true);
+
+      // Starting a new drag cancels the snap animation immediately
+      toggle.dispatchEvent(p('pointerdown', 5, 5));
+      expect(root.classList.contains('ut-snapping')).toBe(false);
+    });
+
+    it('clears the full-hide state when show() is called', () => {
+      const ui = new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
+      const closeButton = Array.from(container.querySelectorAll('.ut-btn-close')).find(
+        (b) => !b.classList.contains('ut-btn-minimize'),
+      ) as HTMLElement;
+      closeButton.click(); // fully hidden
+
+      ui.show();
+
+      const panel = container.querySelector('.unleash-toolbar') as HTMLElement;
+      expect(panel.style.display).not.toBe('none');
+    });
+
+    it('stays fully hidden across re-renders triggered by state changes', () => {
+      new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
+      const closeButton = Array.from(container.querySelectorAll('.ut-btn-close')).find(
+        (b) => !b.classList.contains('ut-btn-minimize'),
+      ) as HTMLElement;
+      closeButton.click(); // fully hidden
+
+      // A state change re-renders the UI; it must remain hidden
+      stateManager.recordEvaluation('new-flag', 'flag', true, true, {});
+      stateManager.setFlagOverride('new-flag', { type: 'flag', value: false });
+
+      const toggle = container.querySelector('.ut-toggle') as HTMLElement;
+      const panel = container.querySelector('.unleash-toolbar') as HTMLElement;
+      expect(toggle.style.display).toBe('none');
+      expect(panel.style.display).toBe('none');
+    });
+
+    it('opens on click when draggable is false (no drag handling)', () => {
+      new ToolbarUI(stateManager, wrappedClient, { container, draggable: false });
+      const toggle = container.querySelector('.ut-toggle') as HTMLElement;
+
+      toggle.click();
+
+      expect(stateManager.getVisibility()).toBe(true);
     });
   });
 });
