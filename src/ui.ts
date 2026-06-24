@@ -185,12 +185,15 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   /**
-   * Hide the toolbar entirely — both panel and floating icon. This state is
-   * ephemeral and intentionally NOT persisted, so a page refresh brings the
-   * toolbar back. Triggered by the header's close (×) button.
+   * Hide the toolbar entirely — both panel and floating icon. The "everything
+   * hidden" state is ephemeral and NOT persisted, so a page refresh brings the
+   * toolbar back. We do persist visibility as collapsed, so on reload it
+   * returns minimized (the floating icon) rather than fully open. Triggered by
+   * the header's close (×) button.
    */
   private hideCompletely(): void {
     this.hiddenCompletely = true;
+    this.stateManager.setVisibility(false);
     this.render();
   }
 

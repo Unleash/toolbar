@@ -820,7 +820,7 @@ describe('ToolbarUI', () => {
       expect(panel.style.display).toBe('none');
     });
 
-    it('should NOT persist the full-hide state (reappears on reload)', () => {
+    it('should reappear minimized (not maximized) on reload after a full-hide', () => {
       const ui = new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       const closeButton = Array.from(container.querySelectorAll('.ut-btn-close')).find(
@@ -833,9 +833,12 @@ describe('ToolbarUI', () => {
       const reloadedManager = new ToolbarStateManager('local', 'test-toolbar');
       new ToolbarUI(reloadedManager, wrappedClient, { container });
 
-      // isVisible was true before hiding, so the panel comes back
+      // The ephemeral full-hide is gone, but visibility was persisted as
+      // collapsed, so the toolbar returns as the floating icon (minimized).
+      const toggle = container.querySelector('.ut-toggle') as HTMLElement;
       const panel = container.querySelector('.unleash-toolbar') as HTMLElement;
-      expect(panel.style.display).not.toBe('none');
+      expect(toggle.style.display).not.toBe('none');
+      expect(panel.style.display).toBe('none');
     });
   });
 
