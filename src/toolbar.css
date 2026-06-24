@@ -119,6 +119,11 @@
   width: 28px;
   height: 28px;
   object-fit: contain;
+  /* Let pointer events fall through to the button so a drag started on the
+     icon doesn't trigger the browser's native image-drag behavior */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .unleash-toolbar-container .unleash-toolbar {
@@ -308,6 +313,11 @@
 .unleash-toolbar-container.ut-dragging .ut-toggle {
   transition: none;
   transform: none;
+}
+
+/* Smooth snap to the nearest edge after a drag is released */
+.unleash-toolbar-container.ut-snapping {
+  transition: left 0.22s ease, top 0.22s ease;
 }
 
 .unleash-toolbar .ut-tabs {

@@ -809,6 +809,20 @@ describe('ToolbarUI', () => {
       expect(root.classList.contains('position-top-left')).toBe(false);
       expect(root.style.left).toBe('20px'); // EDGE_MARGIN for the left edge
     });
+
+    it('should ignore a persisted drag position when draggable is false', () => {
+      stateManager.setDragPosition({ edge: 'left', offset: 0 });
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        position: 'top-left',
+        draggable: false,
+      });
+
+      const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+      // Falls back to the configured preset, ignoring the stored position
+      expect(root.classList.contains('position-top-left')).toBe(true);
+      expect(root.style.left).toBe('');
+    });
   });
 
   describe('drag behavior', () => {

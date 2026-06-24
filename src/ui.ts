@@ -94,6 +94,7 @@ export class ToolbarUI implements IToolbarUI {
   private dragGrabY = 0;
   private dragStartX = 0;
   private dragStartY = 0;
+  private snapTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     stateManager: ToolbarStateManager,
@@ -197,6 +198,7 @@ export class ToolbarUI implements IToolbarUI {
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.handleResize);
     }
+    if (this.snapTimer !== undefined) clearTimeout(this.snapTimer);
     this.removeDragListeners();
     this.rootElement.remove();
   }
@@ -219,7 +221,7 @@ export class ToolbarUI implements IToolbarUI {
         @click=${() => this.onToggleClick()}
         title=${this.draggable ? 'Open Unleash Toolbar (drag to move)' : 'Open Unleash Toolbar'}
       >
-        <img src="${UNLEASH_LOGO}" alt="Unleash" />
+        <img src="${UNLEASH_LOGO}" alt="Unleash" draggable="false" />
       </button>
 
       <div
@@ -250,7 +252,9 @@ export class ToolbarUI implements IToolbarUI {
    */
   private applyPosition(): void {
     const root = this.rootElement;
-    const drag = this.stateManager.getDragPosition();
+    // A persisted drag position only applies while dragging is enabled, so
+    // toggling `draggable: false` reverts to the configured preset position.
+    const drag = this.draggable ? this.stateManager.getDragPosition() : undefined;
 
     // Reset any inline coordinates before re-applying
     root.style.top = '';
@@ -264,26 +268,32 @@ export class ToolbarUI implements IToolbarUI {
       return;
     }
 
-    const coords = this.stateManager.getVisibility()
+    // Always position via left/top (never right/bottom) so the snap-to-edge
+    // animation moves through a single, continuous coordinate space.
+    const { left, top } = this.stateManager.getVisibility()
       ? this.computePanelCoords(drag)
       : this.computeIconCoords(drag);
-
-    for (const [prop, value] of Object.entries(coords)) {
-      root.style.setProperty(prop, `${value}px`);
-    }
+    root.style.left = `${left}px`;
+    root.style.top = `${top}px`;
   }
 
   /** Inline coordinates for the collapsed floating icon at a dragged position */
-  private computeIconCoords(drag: DragPosition): Record<string, number> {
+  private computeIconCoords(drag: DragPosition): { left: number; top: number } {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const max = (size: number) => (axis: number) =>
-      clamp(drag.offset * (axis - size), EDGE_MARGIN, axis - size - EDGE_MARGIN);
+    const alongX = clamp(drag.offset * (vw - TOGGLE_SIZE), EDGE_MARGIN, vw - TOGGLE_SIZE - EDGE_MARGIN);
+    const alongY = clamp(drag.offset * (vh - TOGGLE_SIZE), EDGE_MARGIN, vh - TOGGLE_SIZE - EDGE_MARGIN);
 
-    if (drag.edge === 'top') return { top: EDGE_MARGIN, left: max(TOGGLE_SIZE)(vw) };
-    if (drag.edge === 'bottom') return { bottom: EDGE_MARGIN, left: max(TOGGLE_SIZE)(vw) };
-    if (drag.edge === 'left') return { left: EDGE_MARGIN, top: max(TOGGLE_SIZE)(vh) };
-    return { right: EDGE_MARGIN, top: max(TOGGLE_SIZE)(vh) };
+    switch (drag.edge) {
+      case 'top':
+        return { left: alongX, top: EDGE_MARGIN };
+      case 'bottom':
+        return { left: alongX, top: vh - TOGGLE_SIZE - EDGE_MARGIN };
+      case 'left':
+        return { left: EDGE_MARGIN, top: alongY };
+      default:
+        return { left: vw - TOGGLE_SIZE - EDGE_MARGIN, top: alongY };
+    }
   }
 
   /**
@@ -291,28 +301,34 @@ export class ToolbarUI implements IToolbarUI {
    * hugs the same edge as the icon and is centered near the icon's offset, then
    * clamped so the 400px-wide panel never overflows the viewport.
    */
-  private computePanelCoords(drag: DragPosition): Record<string, number> {
+  private computePanelCoords(drag: DragPosition): { left: number; top: number } {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const panelHeight = Math.min(700, vh * 0.85);
 
-    if (drag.edge === 'top' || drag.edge === 'bottom') {
-      const iconLeft = drag.offset * (vw - TOGGLE_SIZE);
-      const left = clamp(
-        iconLeft + TOGGLE_SIZE / 2 - PANEL_WIDTH / 2,
-        EDGE_MARGIN,
-        vw - PANEL_WIDTH - EDGE_MARGIN,
-      );
-      return drag.edge === 'top' ? { top: EDGE_MARGIN, left } : { bottom: EDGE_MARGIN, left };
-    }
-
+    const iconLeft = drag.offset * (vw - TOGGLE_SIZE);
     const iconTop = drag.offset * (vh - TOGGLE_SIZE);
+    const left = clamp(
+      iconLeft + TOGGLE_SIZE / 2 - PANEL_WIDTH / 2,
+      EDGE_MARGIN,
+      vw - PANEL_WIDTH - EDGE_MARGIN,
+    );
     const top = clamp(
       iconTop + TOGGLE_SIZE / 2 - panelHeight / 2,
       EDGE_MARGIN,
       vh - panelHeight - EDGE_MARGIN,
     );
-    return drag.edge === 'left' ? { left: EDGE_MARGIN, top } : { right: EDGE_MARGIN, top };
+
+    switch (drag.edge) {
+      case 'top':
+        return { left, top: EDGE_MARGIN };
+      case 'bottom':
+        return { left, top: vh - panelHeight - EDGE_MARGIN };
+      case 'left':
+        return { left: EDGE_MARGIN, top };
+      default:
+        return { left: vw - PANEL_WIDTH - EDGE_MARGIN, top };
+    }
   }
 
   // --- Floating toggle: click to open + optional drag-to-move ---
@@ -328,6 +344,13 @@ export class ToolbarUI implements IToolbarUI {
 
   private onTogglePointerDown(e: PointerEvent): void {
     if (!this.draggable || e.button !== 0) return;
+
+    // Cancel any in-flight snap animation so the icon tracks the pointer immediately
+    if (this.snapTimer !== undefined) {
+      clearTimeout(this.snapTimer);
+      this.snapTimer = undefined;
+    }
+    this.rootElement.classList.remove('ut-snapping');
 
     const rect = this.rootElement.getBoundingClientRect();
     this.dragGrabX = e.clientX - rect.left;
@@ -383,6 +406,15 @@ export class ToolbarUI implements IToolbarUI {
       window.innerWidth,
       window.innerHeight,
     );
+
+    // Animate the snap from the drop point to the edge, then drop the
+    // transition class so later renders/resizes reposition instantly.
+    this.rootElement.classList.add('ut-snapping');
+    this.snapTimer = setTimeout(() => {
+      this.rootElement.classList.remove('ut-snapping');
+      this.snapTimer = undefined;
+    }, 250);
+
     this.stateManager.setDragPosition(position);
     this.render();
   };
