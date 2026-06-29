@@ -211,6 +211,114 @@ describe('ToolbarUI', () => {
     });
   });
 
+  describe('banner', () => {
+    it('should not render a banner by default', () => {
+      new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
+
+      expect(container.querySelector('.ut-banner')).toBeFalsy();
+    });
+
+    it('should render the banner message when provided', () => {
+      const message = 'Only client-side flags are overridable here.';
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: message,
+      });
+
+      const banner = container.querySelector('.ut-banner');
+      expect(banner).toBeTruthy();
+      expect(banner?.textContent?.trim()).toBe(message);
+    });
+
+    it('should not render a banner for an empty string', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: '',
+      });
+
+      expect(container.querySelector('.ut-banner')).toBeFalsy();
+    });
+
+    it('should render the banner regardless of the active tab', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: 'Heads up',
+      });
+
+      const contextTab = Array.from(container.querySelectorAll('.ut-tab')).find((tab) =>
+        tab.textContent?.includes('Context'),
+      ) as HTMLElement;
+      contextTab?.click();
+
+      expect(container.querySelector('.ut-banner-text')?.textContent?.trim()).toBe('Heads up');
+    });
+
+    it('should not render a link when only the banner is set', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: 'Some message',
+      });
+
+      expect(container.querySelector('.ut-banner-link')).toBeFalsy();
+    });
+
+    it('should render a link with the default "Read more" text when bannerLink is set', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: 'Some message',
+        bannerLink: 'https://docs.example.com',
+      });
+
+      const link = container.querySelector('.ut-banner-link') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
+      expect(link.getAttribute('href')).toBe('https://docs.example.com');
+      expect(link.textContent?.trim()).toBe('Read more');
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    });
+
+    it('should use bannerLinkText as the link label when provided', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: 'Some message',
+        bannerLink: 'https://docs.example.com',
+        bannerLinkText: 'Learn more',
+      });
+
+      const link = container.querySelector('.ut-banner-link') as HTMLAnchorElement;
+      expect(link.textContent?.trim()).toBe('Learn more');
+    });
+
+    it('should fall back to "Read more" for an empty bannerLinkText', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        banner: 'Some message',
+        bannerLink: 'https://docs.example.com',
+        bannerLinkText: '',
+      });
+
+      expect(container.querySelector('.ut-banner-link')?.textContent?.trim()).toBe('Read more');
+    });
+
+    it('should not render a link when bannerLink is set but banner is not', () => {
+      new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+        bannerLink: 'https://docs.example.com',
+      });
+
+      expect(container.querySelector('.ut-banner')).toBeFalsy();
+      expect(container.querySelector('.ut-banner-link')).toBeFalsy();
+    });
+  });
+
   describe('tabs navigation', () => {
     it('should render flags tab by default', () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });

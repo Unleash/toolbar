@@ -96,6 +96,11 @@ export class ToolbarUI implements IToolbarUI {
   private dragStartY = 0;
   private snapTimer?: ReturnType<typeof setTimeout>;
 
+  // Custom banner
+  private banner?: string;
+  private bannerLink?: string;
+  private bannerLinkText?: string;
+
   constructor(
     stateManager: ToolbarStateManager,
     wrappedClient: WrappedUnleashClient,
@@ -106,6 +111,9 @@ export class ToolbarUI implements IToolbarUI {
     this.themePreset = options.themePreset || 'light';
     this.customTheme = options.theme;
     this.draggable = options.draggable ?? true;
+    this.banner = options.banner;
+    this.bannerLink = options.bannerLink;
+    this.bannerLinkText = options.bannerLinkText;
 
     // Capture original base context before any overrides are applied
     this.originalBaseContext = wrappedClient.__original.getContext();
@@ -232,6 +240,7 @@ export class ToolbarUI implements IToolbarUI {
         style=${showPanel ? 'display: flex;' : 'display: none;'}
       >
         ${this.renderHeader(state)}
+        ${this.renderBanner()}
         ${this.renderTabsNavigation()}
         <div class="ut-content">
           <div style=${this.currentTab === 'flags' ? '' : 'display: none;'}>
@@ -462,6 +471,28 @@ export class ToolbarUI implements IToolbarUI {
             aria-label="Hide toolbar"
           >×</button>
         </div>
+      </div>
+    `;
+  }
+
+  private renderBanner() {
+    if (!this.banner) return null;
+
+    const linkText = this.bannerLinkText || 'Read more';
+
+    return html`
+      <div class="ut-banner" role="note">
+        <span class="ut-banner-text">${this.banner}</span>
+        ${
+          this.bannerLink
+            ? html`<a
+                class="ut-banner-link"
+                href=${this.bannerLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >${linkText}</a>`
+            : null
+        }
       </div>
     `;
   }
