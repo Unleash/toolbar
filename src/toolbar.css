@@ -119,6 +119,11 @@
   width: 28px;
   height: 28px;
   object-fit: contain;
+  /* Let pointer events fall through to the button so a drag started on the
+     icon doesn't trigger the browser's native image-drag behavior */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .unleash-toolbar-container .unleash-toolbar {
@@ -270,6 +275,49 @@
 .unleash-toolbar .ut-btn-close:hover {
   background: rgba(0, 0, 0, 0.3);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Header actions: minimize (_) + hide (×) */
+.unleash-toolbar .ut-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Minimize button renders a small bar that reads as "_" / minimize */
+.unleash-toolbar .ut-minimize-glyph {
+  display: block;
+  width: 10px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+/* Drag-to-move affordance on the floating toggle */
+.unleash-toolbar-container .ut-toggle.ut-draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.unleash-toolbar-container .ut-toggle.ut-draggable:active {
+  cursor: grabbing;
+}
+
+/* While actively dragging: no transitions/selection, no hover scale */
+.unleash-toolbar-container.ut-dragging {
+  transition: none;
+  user-select: none;
+}
+
+.unleash-toolbar-container.ut-dragging .ut-toggle {
+  transition: none;
+  transform: none;
+}
+
+/* Smooth snap to the nearest edge after a drag is released */
+.unleash-toolbar-container.ut-snapping {
+  transition: left 0.22s ease, top 0.22s ease;
 }
 
 .unleash-toolbar .ut-banner {

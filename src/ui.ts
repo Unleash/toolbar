@@ -1,4 +1,5 @@
 import { html, render } from 'lit-html';
+import { DragController } from './drag-controller';
 import type { ToolbarStateManager } from './state';
 import type {
   FlagValue,
@@ -8,6 +9,9 @@ import type {
   UnleashContext,
   WrappedUnleashClient,
 } from './types';
+
+// Re-exported so existing importers (and tests) can keep using it from here
+export { computeDragPosition } from './drag-controller';
 
 // Unleash logo from CDN
 const UNLEASH_LOGO = 'https://cdn.getunleash.io/docs-assets/unleash_logo_icon.svg';
@@ -25,6 +29,16 @@ export class ToolbarUI implements IToolbarUI {
   private customTheme?: InitToolbarOptions['theme'];
   private originalBaseContext: Partial<UnleashContext>;
   private searchQuery: string = '';
+  private draggable: boolean;
+
+  // Owns toolbar placement + the drag-to-move interaction
+  private drag: DragController;
+
+  // Ephemeral "fully hidden" state (NOT persisted): the toolbar reappears on
+  // the next page load. Set via the header's close (×) button.
+  private hiddenCompletely = false;
+
+  // Custom banner
   private banner?: string;
   private bannerLink?: string;
   private bannerLinkText?: string;
@@ -38,6 +52,7 @@ export class ToolbarUI implements IToolbarUI {
     this.position = options.position || 'bottom-right';
     this.themePreset = options.themePreset || 'light';
     this.customTheme = options.theme;
+    this.draggable = options.draggable ?? true;
     this.banner = options.banner;
     this.bannerLink = options.bannerLink;
     this.bannerLinkText = options.bannerLinkText;
@@ -55,9 +70,10 @@ export class ToolbarUI implements IToolbarUI {
       this.stateManager.setVisibility(isVisible);
     }
 
-    // Create single root container
+    // Create single root container. The position (preset class or dragged
+    // coordinates) is managed by applyPosition(), called from render().
     this.rootElement = document.createElement('div');
-    this.rootElement.className = `unleash-toolbar-container position-${this.position}`;
+    this.rootElement.className = 'unleash-toolbar-container';
     if (this.themePreset === 'dark') {
       this.rootElement.classList.add('ut-theme-dark');
     }
@@ -66,6 +82,15 @@ export class ToolbarUI implements IToolbarUI {
     // Attach to container or body
     this.container = options.container || document.body;
     this.container.appendChild(this.rootElement);
+
+    // Placement + drag-to-move are delegated to the DragController. It calls
+    // back to open the panel (a plain click) and to request a re-render.
+    this.drag = new DragController(
+      this.rootElement,
+      this.stateManager,
+      { draggable: this.draggable, position: this.position },
+      { onOpen: () => this.show(), requestRender: () => this.render() },
+    );
 
     // Subscribe to state changes
     this.stateManager.subscribe(() => {
@@ -91,6 +116,7 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   show(): void {
+    this.hiddenCompletely = false;
     this.stateManager.setVisibility(true);
     this.render();
   }
@@ -100,7 +126,29 @@ export class ToolbarUI implements IToolbarUI {
     this.render();
   }
 
+  /**
+   * Collapse the panel down to the floating toggle icon (persisted).
+   * Triggered by the header's minimize (_) button.
+   */
+  private minimize(): void {
+    this.hide();
+  }
+
+  /**
+   * Hide the toolbar entirely — both panel and floating icon. The "everything
+   * hidden" state is ephemeral and NOT persisted, so a page refresh brings the
+   * toolbar back. We do persist visibility as collapsed, so on reload it
+   * returns minimized (the floating icon) rather than fully open. Triggered by
+   * the header's close (×) button.
+   */
+  private hideCompletely(): void {
+    this.hiddenCompletely = true;
+    this.stateManager.setVisibility(false);
+    this.render();
+  }
+
   destroy(): void {
+    this.drag.destroy();
     this.rootElement.remove();
   }
 
@@ -109,20 +157,25 @@ export class ToolbarUI implements IToolbarUI {
     const flagNames = this.stateManager.getFlagNames();
     const isVisible = this.stateManager.getVisibility();
 
+    // Three states: fully hidden (nothing shown), collapsed (toggle icon), open (panel)
+    const showToggle = !isVisible && !this.hiddenCompletely;
+    const showPanel = isVisible && !this.hiddenCompletely;
+
     // Single unified template for everything
     const template = html`
-      <button 
-        class="ut-toggle" 
-        style=${isVisible ? 'display: none;' : 'display: flex;'}
-        @click=${() => this.show()}
-        title="Open Unleash Toolbar"
+      <button
+        class="ut-toggle${this.draggable ? ' ut-draggable' : ''}"
+        style=${showToggle ? 'display: flex;' : 'display: none;'}
+        @pointerdown=${(e: PointerEvent) => this.drag.onPointerDown(e)}
+        @click=${() => this.drag.onToggleClick()}
+        title=${this.draggable ? 'Open Unleash Toolbar (drag to move)' : 'Open Unleash Toolbar'}
       >
-        <img src="${UNLEASH_LOGO}" alt="Unleash" />
+        <img src="${UNLEASH_LOGO}" alt="Unleash" draggable="false" />
       </button>
 
-      <div 
-        class="unleash-toolbar" 
-        style=${isVisible ? 'display: flex;' : 'display: none;'}
+      <div
+        class="unleash-toolbar"
+        style=${showPanel ? 'display: flex;' : 'display: none;'}
       >
         ${this.renderHeader(state)}
         ${this.renderBanner()}
@@ -139,6 +192,7 @@ export class ToolbarUI implements IToolbarUI {
     `;
 
     render(template, this.rootElement);
+    this.drag.apply();
   }
 
   private renderHeader(state: ToolbarState) {
@@ -154,7 +208,20 @@ export class ToolbarUI implements IToolbarUI {
             <div class="ut-title-sub">${flagCount} flags • ${overrideCount} overrides</div>
           </div>
         </div>
-        <button class="ut-btn-close" @click=${() => this.hide()} title="Close toolbar">×</button>
+        <div class="ut-header-actions">
+          <button
+            class="ut-btn-close ut-btn-minimize"
+            @click=${() => this.minimize()}
+            title="Minimize to floating icon"
+            aria-label="Minimize toolbar"
+          ><span class="ut-minimize-glyph"></span></button>
+          <button
+            class="ut-btn-close"
+            @click=${() => this.hideCompletely()}
+            title="Hide until page refresh"
+            aria-label="Hide toolbar"
+          >×</button>
+        </div>
       </div>
     `;
   }

@@ -190,6 +190,16 @@ Switch to the "Context" tab to modify:
 
 All changes apply immediately!
 
+### Step 5: Move or Hide the Toolbar
+
+- **Move it:** drag the floating Unleash icon to any window edge. It snaps to the
+  nearest edge and remembers where you put it across reloads. (Disable with
+  `draggable: false`.)
+- **Minimize it:** click the **`_`** button in the panel header to collapse the panel
+  back down to the floating icon.
+- **Hide it completely:** click the **`×`** button to hide both the panel and the icon.
+  This is temporary — the toolbar reappears after a page refresh.
+
 ## Configuration
 
 ```typescript
@@ -203,7 +213,11 @@ const client = initUnleashToolbar(new UnleashClient({...}), {
   // UI position (default: 'bottom-right')
   // Corner positions: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   // Side positions (vertically centered): 'left' | 'right'
+  // Starting position; overridden once the user drags the toolbar.
   position: 'bottom-right'
+  
+  // Allow dragging the floating icon to any window edge (default: true)
+  draggable: true,
   
   // Start visible or hidden (default: true, respects persisted state)
   initiallyVisible: false,

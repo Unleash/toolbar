@@ -12,6 +12,7 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 - **React Integration**: Seamlessly wraps the official `@unleash/proxy-client-react` SDK
 - **Next.js SSR Support**: Server-side rendering with cookie-based state sync using `@unleash/nextjs`
 - **Customizable UI**: Theming support and positioning options
+- **Draggable & Dismissible**: Drag the floating icon to any window edge, minimize to the icon, or hide it entirely until the next page refresh
 - **Custom Banner**: Optional message in the toolbar to clarify its scope for your team
 - **SDK Compatible**: Works with Unleash JavaScript SDK
 
@@ -300,7 +301,12 @@ interface InitToolbarOptions {
   // UI position (default: 'bottom-right')
   // Corner positions: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   // Side positions (vertically centered): 'left' | 'right'
+  // Used as the starting position; overridden once the user drags the toolbar.
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left' | 'right';
+  
+  // Allow dragging the floating icon to reposition the toolbar along any
+  // window edge. The chosen position is persisted. (default: true)
+  draggable?: boolean;
   
   // Initial visibility (default: false, but respects persisted state if available)
   initiallyVisible?: boolean;

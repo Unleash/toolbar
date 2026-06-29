@@ -1,4 +1,5 @@
 import type {
+  DragPosition,
   FlagMetadata,
   FlagOverride,
   FlagValue,
@@ -465,6 +466,21 @@ export class ToolbarStateManager {
    */
   getVisibility(): boolean | undefined {
     return this.state.isVisible;
+  }
+
+  /**
+   * Persist the position chosen by dragging the toolbar
+   */
+  setDragPosition(position: DragPosition): void {
+    this.state.dragPosition = position;
+    this.persist();
+  }
+
+  /**
+   * Get the persisted drag position (undefined if never dragged)
+   */
+  getDragPosition(): DragPosition | undefined {
+    return this.state.dragPosition;
   }
 
   /**
