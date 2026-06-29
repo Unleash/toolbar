@@ -1,6 +1,6 @@
 {
   "name": "@unleash/toolbar",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Client-side override toolbar for Unleash JavaScript SDKs",
   "type": "module",
   "main": "./dist/index.es.js",
