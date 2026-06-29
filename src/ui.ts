@@ -25,6 +25,9 @@ export class ToolbarUI implements IToolbarUI {
   private customTheme?: InitToolbarOptions['theme'];
   private originalBaseContext: Partial<UnleashContext>;
   private searchQuery: string = '';
+  private banner?: string;
+  private bannerLink?: string;
+  private bannerLinkText?: string;
 
   constructor(
     stateManager: ToolbarStateManager,
@@ -35,6 +38,9 @@ export class ToolbarUI implements IToolbarUI {
     this.position = options.position || 'bottom-right';
     this.themePreset = options.themePreset || 'light';
     this.customTheme = options.theme;
+    this.banner = options.banner;
+    this.bannerLink = options.bannerLink;
+    this.bannerLinkText = options.bannerLinkText;
 
     // Capture original base context before any overrides are applied
     this.originalBaseContext = wrappedClient.__original.getContext();
@@ -119,6 +125,7 @@ export class ToolbarUI implements IToolbarUI {
         style=${isVisible ? 'display: flex;' : 'display: none;'}
       >
         ${this.renderHeader(state)}
+        ${this.renderBanner()}
         ${this.renderTabsNavigation()}
         <div class="ut-content">
           <div style=${this.currentTab === 'flags' ? '' : 'display: none;'}>
@@ -148,6 +155,28 @@ export class ToolbarUI implements IToolbarUI {
           </div>
         </div>
         <button class="ut-btn-close" @click=${() => this.hide()} title="Close toolbar">×</button>
+      </div>
+    `;
+  }
+
+  private renderBanner() {
+    if (!this.banner) return null;
+
+    const linkText = this.bannerLinkText || 'Read more';
+
+    return html`
+      <div class="ut-banner" role="note">
+        <span class="ut-banner-text">${this.banner}</span>
+        ${
+          this.bannerLink
+            ? html`<a
+                class="ut-banner-link"
+                href=${this.bannerLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >${linkText}</a>`
+            : null
+        }
       </div>
     `;
   }

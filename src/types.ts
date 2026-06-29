@@ -112,6 +112,22 @@ export interface InitToolbarOptions {
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left' | 'right';
   /** Whether toolbar is visible on initialization (default: true, but respects persisted state if available) */
   initiallyVisible?: boolean;
+  /**
+   * Optional informational message shown as a banner below the toolbar header.
+   * Useful for clarifying the toolbar's scope/limitations to your team
+   * (e.g. "Only client-side flags are overridable here"). Empty by default.
+   */
+  banner?: string;
+  /**
+   * Optional URL shown as a link next to the banner message. Only rendered when
+   * `banner` is also set. Opens in a new tab.
+   */
+  bannerLink?: string;
+  /**
+   * Text for the `bannerLink` (default: "Read more"). Only used when
+   * `bannerLink` is set.
+   */
+  bannerLinkText?: string;
   /** Sort flags alphabetically instead of by evaluation order (default: false) */
   sortAlphabetically?: boolean;
   /** Enable cookie synchronization for server-side rendering (Next.js) (default: false) */

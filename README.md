@@ -12,6 +12,7 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 - **React Integration**: Seamlessly wraps the official `@unleash/proxy-client-react` SDK
 - **Next.js SSR Support**: Server-side rendering with cookie-based state sync using `@unleash/nextjs`
 - **Customizable UI**: Theming support and positioning options
+- **Custom Banner**: Optional message in the toolbar to clarify its scope for your team
 - **SDK Compatible**: Works with Unleash JavaScript SDK
 
 ## Bundle Size
@@ -303,6 +304,18 @@ interface InitToolbarOptions {
   
   // Initial visibility (default: false, but respects persisted state if available)
   initiallyVisible?: boolean;
+  
+  // Optional informational message shown as a banner below the header.
+  // Useful for clarifying the toolbar's scope to your team, e.g.
+  // "Only client-side flags are overridable here". Empty by default.
+  banner?: string;
+  
+  // Optional URL shown as a link next to the banner message (opens in a new
+  // tab). Only rendered when `banner` is also set.
+  bannerLink?: string;
+  
+  // Text for the banner link (default: "Read more"). Only used with bannerLink.
+  bannerLinkText?: string;
   
   // Sort flags alphabetically instead of by evaluation order (default: false)
   sortAlphabetically?: boolean;

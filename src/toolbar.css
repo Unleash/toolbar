@@ -272,6 +272,33 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.unleash-toolbar .ut-banner {
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ut-text);
+  background: var(--ut-hover);
+  border-bottom: 1px solid var(--ut-border);
+  border-left: 3px solid var(--ut-primary);
+  flex-shrink: 0;
+}
+
+.unleash-toolbar .ut-banner-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.unleash-toolbar .ut-banner-link {
+  color: var(--ut-primary);
+  text-decoration: underline;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.unleash-toolbar .ut-banner-link:hover {
+  text-decoration: none;
+}
+
 .unleash-toolbar .ut-tabs {
   display: flex;
   background: var(--ut-bg);
