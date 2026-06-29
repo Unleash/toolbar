@@ -57,6 +57,10 @@
     "development-tools"
   ],
   "author": "Unleash",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Unleash/toolbar"
+  },
   "bugs": {
     "url": "https://github.com/Unleash/toolbar/issues"
   },
