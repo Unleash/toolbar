@@ -20,10 +20,10 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 
 The toolbar is optimized for minimal impact on your application:
 
-- **Core**: ~8 KB gzipped
-- **React**: ~0.2 KB gzipped (thin wrapper)
-- **Next.js**: ~0.6 KB gzipped (server utilities)
-- **CSS**: ~2.4 KB gzipped
+- **Core**: ~9.5 KB gzipped
+- **React**: ~0.6 KB gzipped (thin wrapper)
+- **Next.js**: ~0.7 KB gzipped (server utilities)
+- **CSS**: ~2.7 KB gzipped
 
 ## Installation
 
@@ -608,7 +608,7 @@ Apache-2.0
 
 ## Links
 
-- [Unleash Documentation](https://docs.getunleash.io/)
+- [Unleash Toolbar Documentation](https://docs.getunleash.io/integrate/toolbar)
 - [Unleash JavaScript SDK](https://github.com/Unleash/unleash-proxy-client-js)
 - [Unleash React SDK](https://github.com/Unleash/proxy-client-react)
 - [Unleash Next.js SDK](https://github.com/Unleash/unleash-nextjs-sdk)
