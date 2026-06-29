@@ -310,6 +310,13 @@ interface InitToolbarOptions {
   // "Only client-side flags are overridable here". Empty by default.
   banner?: string;
   
+  // Optional URL shown as a link next to the banner message (opens in a new
+  // tab). Only rendered when `banner` is also set.
+  bannerLink?: string;
+  
+  // Text for the banner link (default: "Read more"). Only used with bannerLink.
+  bannerLinkText?: string;
+  
   // Sort flags alphabetically instead of by evaluation order (default: false)
   sortAlphabetically?: boolean;
   

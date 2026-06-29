@@ -280,9 +280,23 @@
   background: var(--ut-hover);
   border-bottom: 1px solid var(--ut-border);
   border-left: 3px solid var(--ut-primary);
+  flex-shrink: 0;
+}
+
+.unleash-toolbar .ut-banner-text {
   white-space: pre-wrap;
   word-break: break-word;
-  flex-shrink: 0;
+}
+
+.unleash-toolbar .ut-banner-link {
+  color: var(--ut-primary);
+  text-decoration: underline;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.unleash-toolbar .ut-banner-link:hover {
+  text-decoration: none;
 }
 
 .unleash-toolbar .ut-tabs {

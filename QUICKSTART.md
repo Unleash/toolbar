@@ -211,6 +211,10 @@ const client = initUnleashToolbar(new UnleashClient({...}), {
   // Optional message shown as a banner below the header (empty by default)
   banner: 'Only client-side flags are overridable here.',
   
+  // Optional link next to the banner message (opens in a new tab)
+  bannerLink: 'https://docs.getunleash.io/',
+  bannerLinkText: 'Read more',  // default: 'Read more'
+  
   // Sort flags alphabetically (default: false)
   sortAlphabetically: true,
   

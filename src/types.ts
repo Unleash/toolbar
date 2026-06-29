@@ -118,6 +118,16 @@ export interface InitToolbarOptions {
    * (e.g. "Only client-side flags are overridable here"). Empty by default.
    */
   banner?: string;
+  /**
+   * Optional URL shown as a link next to the banner message. Only rendered when
+   * `banner` is also set. Opens in a new tab.
+   */
+  bannerLink?: string;
+  /**
+   * Text for the `bannerLink` (default: "Read more"). Only used when
+   * `bannerLink` is set.
+   */
+  bannerLinkText?: string;
   /** Sort flags alphabetically instead of by evaluation order (default: false) */
   sortAlphabetically?: boolean;
   /** Enable cookie synchronization for server-side rendering (Next.js) (default: false) */
