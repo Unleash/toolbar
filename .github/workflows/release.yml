@@ -19,10 +19,16 @@ permissions:
 
 jobs:
   from-template:
-    uses: Unleash/.github/.github/workflows/npm-release.yml@v3.0.1
+    uses: Unleash/.github/.github/workflows/npm-release.yml@v4.0.2
     with:
       version: ${{ github.event.inputs.version }}
       tag: ${{ github.event.inputs.tag }}
+      # This repo uses npm (package-lock.json). The template's default
+      # setup-command is pnpm (`pnpm install --frozen-lockfile`), which would
+      # fail here since there is no pnpm-lock.yaml. Override it so deps install
+      # reproducibly from the npm lockfile AND the `prepare` script
+      # (npm run build) fires — which is what populates dist/ before publish.
+      setup-command: npm ci
     secrets:
       UNLEASH_BOT_APP_ID: ${{ secrets.UNLEASH_BOT_APP_ID }}
       UNLEASH_BOT_PRIVATE_KEY: ${{ secrets.UNLEASH_BOT_PRIVATE_KEY }}
