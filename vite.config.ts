@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import dts from 'vite-plugin-dts';
+import dts from 'unplugin-dts/vite'
 import { copyFileSync, readFileSync, writeFileSync } from 'fs';
 import postcss from 'postcss';
 import cssnano from 'cssnano';

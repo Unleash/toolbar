@@ -92,7 +92,7 @@
     "@unleash/proxy-client-react": "^5.0.1",
     "@vitest/coverage-v8": "^4.0.15",
     "cssnano": "^7.1.2",
-    "eslint": "^9.39.2",
+    "eslint": "^10.8.0",
     "jsdom": "^27.3.0",
     "postcss": "^8.5.12",
     "react": "^18.3.1 || ^19.2.3",
@@ -103,7 +103,7 @@
     "unleash-client": "^6.9.3",
     "unleash-proxy-client": "^3.4.1",
     "vite": "^8.0.16",
-    "vite-plugin-dts": "^4.5.4",
+    "unplugin-dts": "^1.0.3",
     "vitest": "^4.0.15"
   },
   "dependencies": {
@@ -112,6 +112,7 @@
   "overrides": {
     "next": {
       "postcss": "^8.5.12"
-    }
+    },
+    "sharp": ">0.35.0"
   }
 }
