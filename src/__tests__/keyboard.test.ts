@@ -168,6 +168,9 @@ describe('keyboard and accessibility', () => {
 
     it('should return focus to the floating icon', () => {
       build({ initiallyVisible: true });
+      // Escape only reaches the handler when focus is inside the toolbar, and
+      // focus is only handed back when the toolbar was holding it
+      panel().focus();
 
       press(panel(), 'Escape');
 
@@ -187,6 +190,59 @@ describe('keyboard and accessibility', () => {
       const event = press(toggle(), 'Escape');
 
       expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
+  describe('hide() focus ownership', () => {
+    /** A control on the host page, standing in for the app's own UI */
+    const pageInput = () => {
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+      return input;
+    };
+
+    it('should not steal focus from the page when the app calls hide()', () => {
+      build({ initiallyVisible: true });
+      const input = pageInput();
+      input.focus();
+
+      // An open panel is not the same as an open panel that holds focus
+      toolbar?.hide();
+
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('should not steal focus when hiding an already-collapsed toolbar', () => {
+      build();
+      const input = pageInput();
+      input.focus();
+
+      toolbar?.hide();
+
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('should hand focus back when the toolbar was holding it', () => {
+      build({ initiallyVisible: true });
+      const input = pageInput();
+      input.focus();
+      // User tabs into the panel, then the app hides it
+      panel().focus();
+
+      toolbar?.hide();
+
+      expect(document.activeElement).toBe(toggle());
+    });
+
+    it('should return focus to the page when the icon is not rendered', () => {
+      build({ showToggleButton: false, initiallyVisible: true });
+      const input = pageInput();
+      input.focus();
+      toolbar?.show(); // records where focus was, then takes it
+
+      toolbar?.hide();
+
+      expect(document.activeElement).toBe(input);
     });
   });
 

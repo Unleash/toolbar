@@ -180,15 +180,25 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   hide(): void {
-    const wasOpen = this.isPanelOpen();
+    // Whether the toolbar *holds* focus, not merely whether it was open: an app
+    // calling hide() while the user is typing in the page must not pull focus
+    // away. Captured before the render, because hiding the panel drops focus to
+    // the body and the answer would then always be no.
+    const heldFocus = this.containsFocus();
+
     this.stateManager.setVisibility(false);
     this.render();
 
-    // Only chase focus if we actually took it — otherwise a hide() call from
-    // application code would yank focus out from under the user.
-    if (wasOpen) {
+    if (heldFocus) {
       this.keyboard.restoreFocus(this.showToggleButton ? this.queryToggleButton() : null);
     }
+  }
+
+  /** Whether focus currently sits on the toolbar or anything inside it */
+  private containsFocus(): boolean {
+    if (typeof document === 'undefined') return false;
+    const active = document.activeElement;
+    return active !== null && this.rootElement.contains(active);
   }
 
   toggle(options: ShowToolbarOptions = {}): void {
