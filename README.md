@@ -575,8 +575,7 @@ of both the tab order and the accessibility tree while hidden.
 While the panel is open, `Tab` cycles within it rather than falling through to
 the page behind. This is a **soft** trap: the page underneath is never marked
 `inert` and the panel does not claim `aria-modal`, so mouse interaction with your
-app is unaffected — important for a tool whose job is watching the page react to
-a flag change. `Esc` always releases the trap and hands focus back to the
+app is unaffected. `Esc` always releases the trap and hands focus back to the
 floating icon (or to whatever held it before, when the icon isn't rendered).
 
 Disable it with `trapFocus: false`.
@@ -590,9 +589,6 @@ Disable it with `trapFocus: false`.
   means a flag costs one `Tab` press to pass, not three
 - Icon-only controls carry visually hidden text rather than relying on `title`
 - Animations are suppressed under `prefers-reduced-motion: reduce`
-- Clicking **Override Variant** moves focus into the variant input with its value
-  selected, so the variant name can be typed immediately; clearing the override
-  returns focus to the button rather than dropping it on the page
 
 ## Theme Customization
 
