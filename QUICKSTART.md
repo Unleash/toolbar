@@ -167,7 +167,8 @@ export default async function ServerPage() {
 Click around your app to trigger feature flag evaluations. The toolbar automatically detects and displays all evaluated flags.
 
 ### Step 2: Open the Toolbar
-Look for the toolbar in the bottom-right corner (or wherever you positioned it). It shows:
+Press **`Cmd/Ctrl + Shift + F`**, or click the floating Unleash icon in the
+bottom-right corner (or wherever you positioned it). It shows:
 - All evaluated flags
 - Their current values (default vs. effective)
 
@@ -179,8 +180,8 @@ Look for the toolbar in the bottom-right corner (or wherever you positioned it).
 - Select "Default" to remove the override
 
 **For Variant Flags:**
-- Select "Override Variant"
-- Enter the variant name you want to test
+- Select "Override Variant" — focus lands in the input with its value selected
+- Type the variant name you want to test
 
 ### Step 4: Override Context
 Switch to the "Context" tab to modify:
@@ -199,6 +200,28 @@ All changes apply immediately!
   back down to the floating icon.
 - **Hide it completely:** click the **`×`** button to hide both the panel and the icon.
   This is temporary — the toolbar reappears after a page refresh.
+
+### Step 6: Drive It From the Keyboard
+
+| Key | Action |
+| --- | --- |
+| `Cmd/Ctrl + Shift + F` | Toggle the panel |
+| `Esc` | Minimize back to the floating icon |
+| `Tab` / `Shift + Tab` | Move between controls (cycles inside the panel) |
+| `←` `→` | Switch tabs, or change a flag between OFF / — / ON |
+
+Prefer no icon at all, and to land straight in the search box?
+
+```typescript
+initUnleashToolbar(client, {
+  showToggleButton: false,
+  focusOnOpen: 'search',
+  shortcut: 'mod+shift+f', // the default; 'mod' is Cmd on macOS, Ctrl elsewhere
+});
+```
+
+See [Keyboard & Accessibility](./README.md#keyboard--accessibility) for the full
+behaviour.
 
 ## Configuration
 

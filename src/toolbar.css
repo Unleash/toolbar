@@ -9,6 +9,11 @@
   --ut-warning: #fdcb6e;
   --ut-shadow: rgba(0, 0, 0, 0.1);
   --ut-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  /* Keyboard focus ring. Two variants: --ut-focus for controls on the panel
+     background, --ut-focus-on-primary for controls sitting on the purple header,
+     where the primary colour would be invisible against itself. */
+  --ut-focus: #6C65E5;
+  --ut-focus-on-primary: #FFFFFF;
   all: initial;
   position: fixed;
   z-index: 999998;
@@ -25,6 +30,55 @@
   --ut-danger: #ff7675;
   --ut-warning: #fdcb6e;
   --ut-shadow: rgba(0, 0, 0, 0.3);
+  /* The dark primary is too low-contrast to read as a focus ring on the dark
+     panel background, so use a light ring in both places. */
+  --ut-focus: #A9A6F5;
+  --ut-focus-on-primary: #FFFFFF;
+}
+
+/*
+ * `--ut-hover` is a *surface* that `--ut-text` has to remain readable on, so a
+ * fixed literal breaks as soon as `theme.backgroundColor` / `theme.textColor`
+ * move: a dark custom background on the light preset left the OFF/—/ON labels
+ * near-white on a near-white group background. Deriving it from the theme's own
+ * two colours keeps the pair in step whatever they are set to.
+ *
+ * The mix ratios are per-preset because the presets are not symmetrical — light
+ * wants a barely-there tint, dark needs a much stronger lift to read as a
+ * distinct surface. Both reproduce the previous literals closely, so preset users
+ * see no change.
+ *
+ * Gated behind @supports: where color-mix() is unavailable the literals above
+ * stand, which is exactly today's behaviour. (A second declaration would not
+ * work as a fallback here — any token sequence is valid for a custom property, so
+ * the browser would accept color-mix() and only fail later, at use time.)
+ */
+@supports (color: color-mix(in srgb, red 5%, blue)) {
+  .unleash-toolbar-container {
+    --ut-hover: color-mix(in srgb, var(--ut-text) 5%, var(--ut-bg));
+  }
+
+  .unleash-toolbar-container.ut-theme-dark {
+    --ut-hover: color-mix(in srgb, var(--ut-text) 18%, var(--ut-bg));
+  }
+}
+
+/*
+ * Visually hidden, still announced by screen readers and still reachable by the
+ * keyboard. Used to give icon-only controls real text instead of relying on
+ * `title`, which most assistive tech treats as an optional description.
+ */
+.unleash-toolbar-container .ut-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Reset problematic inherited styles from page CSS */
@@ -407,7 +461,6 @@
 }
 
 .unleash-toolbar .ut-search-input:focus {
-  outline: none;
   border-color: var(--ut-primary);
 }
 
@@ -568,6 +621,25 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
+/*
+ * A 50% white wash lightens a dark group background so far that the light
+ * `--ut-text` on top stops reading. A tint mixed from the text colour instead
+ * darkens on light themes and lightens on dark ones, so the label keeps its
+ * contrast either way.
+ */
+@supports (color: color-mix(in srgb, red 5%, blue)) {
+  .unleash-toolbar .ut-toggle-btn:hover:not(.active) {
+    background: color-mix(in srgb, var(--ut-text) 14%, transparent);
+  }
+}
+
+/*
+ * `white` is deliberate rather than var(--ut-bg): the active segment is a raised
+ * chip, and its `--ut-primary` label has to stay readable on it. Primary is
+ * already constrained to be dark enough to carry the header's white text, so
+ * dark-on-white holds for every theme — whereas var(--ut-bg) would put the dark
+ * preset's primary on its own dark background.
+ */
 .unleash-toolbar .ut-toggle-btn.active {
   background: white;
   color: var(--ut-primary);
@@ -612,7 +684,6 @@
 }
 
 .unleash-toolbar .ut-input-small:focus {
-  outline: none;
   border-color: var(--ut-primary);
 }
 
@@ -767,7 +838,6 @@
 }
 
 .unleash-toolbar .ut-input:focus {
-  outline: none;
   border-color: var(--ut-primary);
 }
 
@@ -888,4 +958,86 @@
 .unleash-toolbar .ut-flag-list::-webkit-scrollbar-thumb:hover {
   background: var(--ut-primary);
   opacity: 0.8;
+}
+
+/* ==========================================================================
+   Keyboard focus
+   --------------------------------------------------------------------------
+   The container and the floating icon both use `all: initial`, which resets
+   `outline-style` to `none` and so removes the browser's own focus ring. Every
+   focusable control therefore needs its ring restored explicitly.
+
+   These rules live at the end of the file deliberately: `:focus` and
+   `:focus-visible` have equal specificity, so ordering is what makes the ring
+   win over the earlier border-only `:focus` rules.
+   ========================================================================== */
+
+.unleash-toolbar-container .ut-toggle:focus-visible {
+  outline: 3px solid var(--ut-focus);
+  outline-offset: 3px;
+}
+
+/* The panel takes focus programmatically when opened by keyboard. Its border and
+   shadow already delimit it, so a ring around the whole dialog is just noise. */
+.unleash-toolbar-container .unleash-toolbar:focus {
+  outline: none;
+}
+
+.unleash-toolbar .ut-tab:focus-visible,
+.unleash-toolbar .ut-btn:focus-visible,
+.unleash-toolbar .ut-btn-small:focus-visible,
+.unleash-toolbar .ut-btn-icon:focus-visible,
+.unleash-toolbar .ut-toggle-btn:focus-visible,
+.unleash-toolbar .ut-reset-field:focus-visible,
+.unleash-toolbar .ut-btn-remove:focus-visible,
+.unleash-toolbar .ut-input:focus-visible,
+.unleash-toolbar .ut-input-small:focus-visible,
+.unleash-toolbar .ut-search-input:focus-visible,
+.unleash-toolbar .ut-banner-link:focus-visible {
+  outline: 2px solid var(--ut-focus);
+  outline-offset: 1px;
+}
+
+/*
+ * The reset buttons are primary-coloured but sit on the *panel* background, so
+ * they keep the standard ring — just pushed out far enough to read against the
+ * button's own fill rather than blending into it.
+ */
+.unleash-toolbar .ut-tab-header .ut-btn:focus-visible {
+  outline-offset: 2px;
+}
+
+/* Only the header buttons sit on the purple bar, where a light ring is needed */
+.unleash-toolbar .ut-header .ut-btn-close:focus-visible {
+  outline: 2px solid var(--ut-focus-on-primary);
+  outline-offset: 1px;
+}
+
+/* Keep the ring clear of the neighbouring segment in the OFF/—/ON group */
+.unleash-toolbar .ut-toggle-btn:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .unleash-toolbar-container,
+  .unleash-toolbar-container * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  /* The hover pop on the floating icon and the post-drag snap are both motion
+     for its own sake — drop them rather than just shortening them. */
+  .unleash-toolbar-container .ut-toggle:hover {
+    transform: none;
+  }
+
+  .unleash-toolbar-container.ut-snapping {
+    transition: none;
+  }
 }

@@ -1,10 +1,14 @@
 import { html, render } from 'lit-html';
 import { DragController } from './drag-controller';
+import { KeyboardController } from './keyboard-controller';
+import { DEFAULT_SHORTCUT } from './shortcut';
 import type { ToolbarStateManager } from './state';
 import type {
   FlagValue,
   InitToolbarOptions,
   IToolbarUI,
+  ShowToolbarOptions,
+  ToolbarFocusTarget,
   ToolbarState,
   UnleashContext,
   WrappedUnleashClient,
@@ -15,6 +19,14 @@ export { computeDragPosition } from './drag-controller';
 
 // Unleash logo from CDN
 const UNLEASH_LOGO = 'https://cdn.getunleash.io/docs-assets/unleash_logo_icon.svg';
+
+// The three states of a boolean flag's override control, in the order they are
+// rendered — also the order the arrow keys walk through.
+const OVERRIDE_VALUES = ['off', 'default', 'on'] as const;
+type OverrideValue = (typeof OVERRIDE_VALUES)[number];
+
+// Distinguishes the DOM ids of multiple toolbars on the same page
+let instanceCounter = 0;
 
 /**
  * Create the toolbar UI component using Lit
@@ -30,9 +42,18 @@ export class ToolbarUI implements IToolbarUI {
   private originalBaseContext: Partial<UnleashContext>;
   private searchQuery: string = '';
   private draggable: boolean;
+  private showToggleButton: boolean;
+  private focusOnOpen: ToolbarFocusTarget;
+
+  // Unique per instance, so ids referenced by aria-controls/labelledby stay
+  // unambiguous if a page mounts more than one toolbar
+  private uid = `ut-${++instanceCounter}`;
 
   // Owns toolbar placement + the drag-to-move interaction
   private drag: DragController;
+
+  // Owns the shortcut, Escape, the focus trap and outside clicks
+  private keyboard: KeyboardController;
 
   // Ephemeral "fully hidden" state (NOT persisted): the toolbar reappears on
   // the next page load. Set via the header's close (×) button.
@@ -53,6 +74,8 @@ export class ToolbarUI implements IToolbarUI {
     this.themePreset = options.themePreset || 'light';
     this.customTheme = options.theme;
     this.draggable = options.draggable ?? true;
+    this.showToggleButton = options.showToggleButton ?? true;
+    this.focusOnOpen = options.focusOnOpen ?? 'panel';
     this.banner = options.banner;
     this.bannerLink = options.bannerLink;
     this.bannerLinkText = options.bannerLinkText;
@@ -92,6 +115,22 @@ export class ToolbarUI implements IToolbarUI {
       { onOpen: () => this.show(), requestRender: () => this.render() },
     );
 
+    // All keyboard interaction (shortcut, Escape, focus trap) plus the optional
+    // outside-click close live in their own controller.
+    this.keyboard = new KeyboardController(
+      this.rootElement,
+      {
+        shortcut: options.shortcut ?? DEFAULT_SHORTCUT,
+        trapFocus: options.trapFocus ?? true,
+        closeOnOutsideClick: options.closeOnOutsideClick ?? false,
+      },
+      {
+        onToggle: () => this.toggle(),
+        onMinimize: () => this.minimize(),
+        isOpen: () => this.isPanelOpen(),
+      },
+    );
+
     // Subscribe to state changes
     this.stateManager.subscribe(() => {
       this.render();
@@ -113,25 +152,83 @@ export class ToolbarUI implements IToolbarUI {
     if (this.customTheme.borderColor)
       style.setProperty('--ut-border', this.customTheme.borderColor);
     if (this.customTheme.fontFamily) style.setProperty('--ut-font', this.customTheme.fontFamily);
+    // Left unset, the focus ring falls through to the themePreset's own value
+    if (this.customTheme.focusColor) style.setProperty('--ut-focus', this.customTheme.focusColor);
   }
 
-  show(): void {
+  /** Whether the expanded panel is currently on screen */
+  private isPanelOpen(): boolean {
+    return Boolean(this.stateManager.getVisibility()) && !this.hiddenCompletely;
+  }
+
+  show(options: ShowToolbarOptions = {}): void {
+    const target = options.focus ?? this.focusOnOpen;
+
+    // Focusing the panel takes focus away from the page, so record where it was
+    // in case the floating icon isn't rendered to hand it back to.
+    this.keyboard.rememberFocus();
+
+    // 'context' and 'search' live on different tabs; switch before rendering so
+    // the target is visible (and therefore focusable) by the time we focus it.
+    if (target === 'context') this.currentTab = 'context';
+    if (target === 'search') this.currentTab = 'flags';
+
     this.hiddenCompletely = false;
     this.stateManager.setVisibility(true);
     this.render();
+    this.applyFocus(target);
   }
 
   hide(): void {
+    const wasOpen = this.isPanelOpen();
     this.stateManager.setVisibility(false);
     this.render();
+
+    // Only chase focus if we actually took it — otherwise a hide() call from
+    // application code would yank focus out from under the user.
+    if (wasOpen) {
+      this.keyboard.restoreFocus(this.showToggleButton ? this.queryToggleButton() : null);
+    }
+  }
+
+  toggle(options: ShowToolbarOptions = {}): void {
+    if (this.isPanelOpen()) {
+      this.minimize();
+    } else {
+      this.show(options);
+    }
   }
 
   /**
    * Collapse the panel down to the floating toggle icon (persisted).
-   * Triggered by the header's minimize (_) button.
+   * Triggered by the header's minimize (_) button and by Escape.
    */
   private minimize(): void {
     this.hide();
+  }
+
+  private queryToggleButton(): HTMLElement | null {
+    return this.rootElement.querySelector<HTMLElement>('.ut-toggle');
+  }
+
+  private queryPanel(): HTMLElement | null {
+    return this.rootElement.querySelector<HTMLElement>('.unleash-toolbar');
+  }
+
+  /** Move focus to the requested control, falling back to the panel container */
+  private applyFocus(target: ToolbarFocusTarget): void {
+    const panel = this.queryPanel();
+    if (!panel) return;
+
+    const selectors: Record<ToolbarFocusTarget, string | null> = {
+      panel: null,
+      search: '.ut-search-input',
+      context: '.ut-context-form .ut-input:not([readonly])',
+    };
+
+    const selector = selectors[target];
+    const element = selector ? panel.querySelector<HTMLElement>(selector) : null;
+    (element ?? panel).focus();
   }
 
   /**
@@ -149,6 +246,7 @@ export class ToolbarUI implements IToolbarUI {
 
   destroy(): void {
     this.drag.destroy();
+    this.keyboard.destroy();
     this.rootElement.remove();
   }
 
@@ -158,7 +256,7 @@ export class ToolbarUI implements IToolbarUI {
     const isVisible = this.stateManager.getVisibility();
 
     // Three states: fully hidden (nothing shown), collapsed (toggle icon), open (panel)
-    const showToggle = !isVisible && !this.hiddenCompletely;
+    const showToggle = !isVisible && !this.hiddenCompletely && this.showToggleButton;
     const showPanel = isVisible && !this.hiddenCompletely;
 
     // Single unified template for everything
@@ -168,23 +266,38 @@ export class ToolbarUI implements IToolbarUI {
         style=${showToggle ? 'display: flex;' : 'display: none;'}
         @pointerdown=${(e: PointerEvent) => this.drag.onPointerDown(e)}
         @click=${() => this.drag.onToggleClick()}
-        title=${this.draggable ? 'Open Unleash Toolbar (drag to move)' : 'Open Unleash Toolbar'}
+        title=${this.toggleTitle()}
       >
-        <img src="${UNLEASH_LOGO}" alt="Unleash" draggable="false" />
+        <!-- alt="" so the button's own text supplies the accessible name -->
+        <img src="${UNLEASH_LOGO}" alt="" draggable="false" />
+        <span class="ut-sr-only">Open Unleash Toolbar</span>
       </button>
 
       <div
         class="unleash-toolbar"
         style=${showPanel ? 'display: flex;' : 'display: none;'}
+        role="dialog"
+        aria-labelledby="${this.uid}-title"
+        tabindex="-1"
       >
         ${this.renderHeader(state)}
         ${this.renderBanner()}
         ${this.renderTabsNavigation()}
         <div class="ut-content">
-          <div style=${this.currentTab === 'flags' ? '' : 'display: none;'}>
+          <div
+            id="${this.uid}-panel-flags"
+            role="tabpanel"
+            aria-labelledby="${this.uid}-tab-flags"
+            style=${this.currentTab === 'flags' ? '' : 'display: none;'}
+          >
             ${this.renderFlagsTab(flagNames)}
           </div>
-          <div style=${this.currentTab === 'context' ? '' : 'display: none;'}>
+          <div
+            id="${this.uid}-panel-context"
+            role="tabpanel"
+            aria-labelledby="${this.uid}-tab-context"
+            style=${this.currentTab === 'context' ? '' : 'display: none;'}
+          >
             ${this.renderContextTab(state.contextOverrides)}
           </div>
         </div>
@@ -195,24 +308,39 @@ export class ToolbarUI implements IToolbarUI {
     this.drag.apply();
   }
 
+  /** Tooltip for the floating icon: what it does, plus how else to open it */
+  private toggleTitle(): string {
+    const shortcut = this.keyboard.shortcutLabel;
+    const base = shortcut ? `Open Unleash Toolbar (${shortcut})` : 'Open Unleash Toolbar';
+    return this.draggable ? `${base} — drag to move` : base;
+  }
+
   private renderHeader(state: ToolbarState) {
     const flagCount = Object.keys(state.flags).length;
     const overrideCount = Object.values(state.flags).filter((f) => f.override !== null).length;
+    const shortcut = this.keyboard.shortcutLabel;
+
+    // Without the floating icon there is nothing to minimize *to*, so the two
+    // header buttons would do the same thing — render only the close button.
+    const closeHint = shortcut ? `Close (${shortcut} to reopen)` : 'Close toolbar';
 
     return html`
       <div class="ut-header">
         <div class="ut-title">
-          <img src="${UNLEASH_LOGO}" alt="Unleash" />
+          <img src="${UNLEASH_LOGO}" alt="" />
           <div>
-            <div class="ut-title-main">Unleash Toolbar</div>
+            <div class="ut-title-main" id="${this.uid}-title">Unleash Toolbar</div>
             <div class="ut-title-sub">${flagCount} flags • ${overrideCount} overrides</div>
           </div>
         </div>
         <div class="ut-header-actions">
+          ${
+            this.showToggleButton
+              ? html`
           <button
             class="ut-btn-close ut-btn-minimize"
             @click=${() => this.minimize()}
-            title="Minimize to floating icon"
+            title="Minimize to floating icon (Esc)"
             aria-label="Minimize toolbar"
           ><span class="ut-minimize-glyph"></span></button>
           <button
@@ -221,6 +349,16 @@ export class ToolbarUI implements IToolbarUI {
             title="Hide until page refresh"
             aria-label="Hide toolbar"
           >×</button>
+        `
+              : html`
+          <button
+            class="ut-btn-close"
+            @click=${() => this.minimize()}
+            title=${closeHint}
+            aria-label=${closeHint}
+          >×</button>
+        `
+          }
         </div>
       </div>
     `;
@@ -249,22 +387,76 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   private renderTabsNavigation() {
+    const tabs = [
+      { id: 'flags', label: 'Feature Flags' },
+      { id: 'context', label: 'Context' },
+    ] as const;
+
     return html`
-      <div class="ut-tabs">
-        <button 
-          class=${`ut-tab ${this.currentTab === 'flags' ? 'active' : ''}`}
-          @click=${() => this.switchTab('flags')}
+      <div
+        class="ut-tabs"
+        role="tablist"
+        aria-label="Toolbar sections"
+        @keydown=${(e: KeyboardEvent) => this.onTabsKeyDown(e)}
+      >
+        ${tabs.map((tab) => {
+          const isActive = this.currentTab === tab.id;
+          return html`
+        <button
+          class=${`ut-tab ${isActive ? 'active' : ''}`}
+          id="${this.uid}-tab-${tab.id}"
+          role="tab"
+          aria-selected=${isActive ? 'true' : 'false'}
+          aria-controls="${this.uid}-panel-${tab.id}"
+          tabindex=${isActive ? 0 : -1}
+          @click=${() => this.switchTab(tab.id)}
         >
-          Feature Flags
+          ${tab.label}
         </button>
-        <button 
-          class=${`ut-tab ${this.currentTab === 'context' ? 'active' : ''}`}
-          @click=${() => this.switchTab('context')}
-        >
-          Context
-        </button>
+      `;
+        })}
       </div>
     `;
+  }
+
+  /**
+   * Arrow-key navigation across the tablist, per the WAI-ARIA tabs pattern:
+   * only the selected tab is in the tab order, and Left/Right (plus Home/End)
+   * move between them with selection following focus.
+   */
+  private onTabsKeyDown(event: KeyboardEvent): void {
+    const order = ['flags', 'context'] as const;
+    const current = order.indexOf(this.currentTab);
+
+    let next: number;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = (current + 1) % order.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = (current - 1 + order.length) % order.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = order.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    // Stop the Tab trap and any page-level arrow handling from also reacting
+    event.stopPropagation();
+
+    // The tablist is the listener's own element, so the newly selected tab is
+    // just its nth child
+    const tablist = event.currentTarget as HTMLElement;
+    this.switchTab(order[next]);
+    this.focusWithin(tablist, `[role="tab"]:nth-of-type(${next + 1})`);
   }
 
   private switchTab(tab: 'flags' | 'context'): void {
@@ -289,8 +481,10 @@ export class ToolbarUI implements IToolbarUI {
     return html`
       <div class="ut-tab-header">
         <div class="ut-search-container">
+          <label class="ut-sr-only" for="${this.uid}-search">Search flags</label>
           <input
             type="text"
+            id="${this.uid}-search"
             class="ut-search-input"
             placeholder="Search flags..."
             .value=${this.searchQuery}
@@ -325,7 +519,7 @@ export class ToolbarUI implements IToolbarUI {
     const hasOverride = metadata.override !== null;
 
     // Determine current state for toggle
-    let toggleState = 'default';
+    let toggleState: OverrideValue = 'default';
     if (hasOverride && metadata.override?.type === 'flag') {
       toggleState = metadata.override.value ? 'on' : 'off';
     }
@@ -357,49 +551,34 @@ export class ToolbarUI implements IToolbarUI {
         <div class="ut-flag-control">
           ${
             !isVariant
-              ? html`
-            <div class="ut-toggle-group">
-              <button 
-                class=${`ut-toggle-btn ${toggleState === 'off' ? 'active' : ''}`}
-                @click=${() => this.setFlagOverride(name, 'off')}
-                title="Force this flag to OFF"
-              >OFF</button>
-              <button 
-                class=${`ut-toggle-btn ${toggleState === 'default' ? 'active' : ''}`}
-                @click=${() => this.setFlagOverride(name, 'default')}
-                title="Use default value from Unleash (no override)"
-              >—</button>
-              <button 
-                class=${`ut-toggle-btn ${toggleState === 'on' ? 'active' : ''}`}
-                @click=${() => this.setFlagOverride(name, 'on')}
-                title="Force this flag to ON"
-              >ON</button>
-            </div>
-          `
+              ? this.renderOverrideRadioGroup(name, toggleState)
               : html`
             <div class="ut-variant-control">
               ${
                 hasOverride && metadata.override?.type === 'variant'
                   ? html`
-                <input 
-                  type="text" 
-                  class="ut-input-small" 
-                  placeholder="Variant name" 
+                <input
+                  type="text"
+                  class="ut-input-small"
+                  placeholder="Variant name"
                   .value=${metadata.override.variantKey}
                   @input=${(e: Event) => this.setVariant(name, (e.target as HTMLInputElement).value)}
                   title="Enter variant name to override with"
+                  aria-label="Variant name to override ${name} with"
                 />
-                <button 
-                  class="ut-btn-small active" 
-                  @click=${() => this.toggleVariantOverride(name)}
+                <button
+                  class="ut-btn-small active"
+                  @click=${(e: Event) => this.toggleVariantOverride(name, e)}
                   title="Clear variant override"
+                  aria-label="Clear variant override for ${name}"
                 >Clear Override</button>
               `
                   : html`
-                <button 
-                  class="ut-btn-small" 
-                  @click=${() => this.toggleVariantOverride(name)}
+                <button
+                  class="ut-btn-small"
+                  @click=${(e: Event) => this.toggleVariantOverride(name, e)}
                   title="Set a variant override"
+                  aria-label="Override variant for ${name}"
                 >Override Variant</button>
               `
               }
@@ -409,6 +588,78 @@ export class ToolbarUI implements IToolbarUI {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * The OFF / — / ON control for a boolean flag, as a WAI-ARIA radio group.
+   *
+   * Radio semantics (rather than three plain buttons) are what tell a screen
+   * reader which of the three is currently in effect. The roving tabindex is
+   * also a plain keyboard win: each flag row costs one Tab stop instead of
+   * three, so a list of 50 flags takes 50 stops to walk rather than 150.
+   */
+  private renderOverrideRadioGroup(name: string, toggleState: OverrideValue) {
+    const labels: Record<OverrideValue, { text: string; description: string }> = {
+      off: { text: 'OFF', description: `Force ${name} off` },
+      default: { text: '—', description: `Use the default value from Unleash for ${name}` },
+      on: { text: 'ON', description: `Force ${name} on` },
+    };
+
+    return html`
+      <div
+        class="ut-toggle-group"
+        role="radiogroup"
+        aria-label="Override for ${name}"
+        @keydown=${(e: KeyboardEvent) => this.onOverrideKeyDown(e, name, toggleState)}
+      >
+        ${OVERRIDE_VALUES.map((value) => {
+          const isActive = toggleState === value;
+          return html`
+        <button
+          class=${`ut-toggle-btn ${isActive ? 'active' : ''}`}
+          role="radio"
+          aria-checked=${isActive ? 'true' : 'false'}
+          aria-label=${labels[value].description}
+          tabindex=${isActive ? 0 : -1}
+          @click=${() => this.setFlagOverride(name, value)}
+          title=${labels[value].description}
+        >${labels[value].text}</button>
+      `;
+        })}
+      </div>
+    `;
+  }
+
+  /**
+   * Arrow-key navigation within a flag's override radio group. Selection follows
+   * focus, which is the expected behaviour for radios.
+   */
+  private onOverrideKeyDown(event: KeyboardEvent, name: string, current: OverrideValue): void {
+    const index = OVERRIDE_VALUES.indexOf(current);
+    let next: number;
+
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = (index + 1) % OVERRIDE_VALUES.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = (index - 1 + OVERRIDE_VALUES.length) % OVERRIDE_VALUES.length;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    // The group is the listener's own element, so the newly selected radio is
+    // just its nth child — no need to match the flag by name.
+    const group = event.currentTarget as HTMLElement;
+    this.setFlagOverride(name, OVERRIDE_VALUES[next]);
+    // The roving tabindex has moved, so focus must follow it explicitly
+    this.focusWithin(group, `[role="radio"]:nth-of-type(${next + 1})`);
   }
 
   private renderValueBadge(value: FlagValue) {
@@ -431,16 +682,36 @@ export class ToolbarUI implements IToolbarUI {
     }
   }
 
-  private toggleVariantOverride(flagName: string): void {
+  private toggleVariantOverride(flagName: string, event: Event): void {
     const metadata = this.stateManager.getFlagMetadata(flagName);
+    // Resolve the row *before* touching state: the re-render detaches the
+    // clicked button, and closest() on a detached node would find nothing.
+    const control = (event.currentTarget as HTMLElement).closest('.ut-variant-control');
 
     if (metadata?.override) {
-      // Clear override
+      // Clearing replaces the clicked button with the "Override Variant" one, so
+      // focus has to follow it across the swap or it lands on the document body.
       this.stateManager.setFlagOverride(flagName, null);
+      this.focusWithin(control, '.ut-btn-small');
     } else {
-      // Set default variant override
       this.stateManager.setFlagOverride(flagName, { type: 'variant', variantKey: 'default' });
+      // Select the prefilled "default" so the variant name can be typed over it
+      const input = this.focusWithin(control, '.ut-input-small') as HTMLInputElement | null;
+      input?.select();
     }
+  }
+
+  /**
+   * Focus a control that a re-render has just swapped into `container`.
+   *
+   * Scoping by the container the interaction started from means the flag never
+   * has to be matched by name — which also sidesteps having to escape flag names
+   * that contain selector syntax.
+   */
+  private focusWithin(container: Element | null, selector: string): HTMLElement | null {
+    const element = container?.querySelector<HTMLElement>(selector) ?? null;
+    element?.focus();
+    return element;
   }
 
   private setVariant(flagName: string, variantKey: string): void {
@@ -472,7 +743,7 @@ export class ToolbarUI implements IToolbarUI {
   ) {
     return html`
       <div class="ut-form-group">
-        <label class="ut-label">
+        <label class="ut-label" for="${this.uid}-field-${fieldName}">
           ${label}${readonly ? html` <span class="ut-readonly-label">(read-only)</span>` : null}
         </label>
         <div class="ut-input-with-reset">
@@ -484,15 +755,16 @@ export class ToolbarUI implements IToolbarUI {
             @input=${readonly ? null : (e: Event) => this.updateContextField(fieldName, (e.target as HTMLInputElement).value)}
             ?readonly=${readonly}
             title=${readonly ? 'This context field is static and cannot be modified.' : ''}
+            id="${this.uid}-field-${fieldName}"
           />
           ${
             isOverridden && !readonly
               ? html`
-            <button 
-              class="ut-reset-field" 
+            <button
+              class="ut-reset-field"
               @click=${() => this.resetContextField(fieldName)}
               title="Reset to original value"
-            >↻</button>
+            ><span aria-hidden="true">↻</span><span class="ut-sr-only">Reset ${label} to original value</span></button>
           `
               : null
           }
@@ -583,22 +855,23 @@ export class ToolbarUI implements IToolbarUI {
           <div class="ut-property-row">
             <div class="ut-property-key" title="Property key (read-only)">${key}</div>
             <div class="ut-input-with-reset">
-              <input 
-                type="text" 
-                class="ut-input" 
+              <input
+                type="text"
+                class="ut-input"
                 placeholder="Value"
                 .value=${value}
                 @input=${(e: Event) => this.updatePropertyValue(key, (e.target as HTMLInputElement).value)}
                 title=${isOverridden ? `Original: ${baseValue}` : ''}
+                aria-label="Value of custom property ${key}"
               />
               ${
                 isOverridden
                   ? html`
-                <button 
-                  class="ut-reset-field" 
+                <button
+                  class="ut-reset-field"
                   @click=${() => this.resetProperty(key)}
                   title="Reset to original value"
-                >↻</button>
+                ><span aria-hidden="true">↻</span><span class="ut-sr-only">Reset ${key} to original value</span></button>
               `
                   : null
               }
