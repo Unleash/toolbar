@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import { DragController } from './drag-controller';
-import { KeyboardController } from './keyboard-controller';
+import { KeyboardController, rovingIndexForKey } from './keyboard-controller';
 import { DEFAULT_SHORTCUT } from './shortcut';
 import type { ToolbarStateManager } from './state';
 import type {
@@ -426,37 +426,20 @@ export class ToolbarUI implements IToolbarUI {
    */
   private onTabsKeyDown(event: KeyboardEvent): void {
     const order = ['flags', 'context'] as const;
-    const current = order.indexOf(this.currentTab);
-
-    let next: number;
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        next = (current + 1) % order.length;
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        next = (current - 1 + order.length) % order.length;
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = order.length - 1;
-        break;
-      default:
-        return;
-    }
+    const next = rovingIndexForKey(event.key, order.indexOf(this.currentTab), order.length, {
+      homeEnd: true,
+    });
+    if (next === null) return;
 
     event.preventDefault();
     // Stop the Tab trap and any page-level arrow handling from also reacting
     event.stopPropagation();
 
     // The tablist is the listener's own element, so the newly selected tab is
-    // just its nth child
+    // just its nth matching child
     const tablist = event.currentTarget as HTMLElement;
     this.switchTab(order[next]);
-    this.focusWithin(tablist, `[role="tab"]:nth-of-type(${next + 1})`);
+    this.focusWithin(tablist, '[role="tab"]', next);
   }
 
   private switchTab(tab: 'flags' | 'context'): void {
@@ -635,31 +618,23 @@ export class ToolbarUI implements IToolbarUI {
    * focus, which is the expected behaviour for radios.
    */
   private onOverrideKeyDown(event: KeyboardEvent, name: string, current: OverrideValue): void {
-    const index = OVERRIDE_VALUES.indexOf(current);
-    let next: number;
-
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        next = (index + 1) % OVERRIDE_VALUES.length;
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        next = (index - 1 + OVERRIDE_VALUES.length) % OVERRIDE_VALUES.length;
-        break;
-      default:
-        return;
-    }
+    // No homeEnd: a radio group is not expected to respond to Home/End
+    const next = rovingIndexForKey(
+      event.key,
+      OVERRIDE_VALUES.indexOf(current),
+      OVERRIDE_VALUES.length,
+    );
+    if (next === null) return;
 
     event.preventDefault();
     event.stopPropagation();
 
     // The group is the listener's own element, so the newly selected radio is
-    // just its nth child — no need to match the flag by name.
+    // just its nth matching child — no need to match the flag by name.
     const group = event.currentTarget as HTMLElement;
     this.setFlagOverride(name, OVERRIDE_VALUES[next]);
     // The roving tabindex has moved, so focus must follow it explicitly
-    this.focusWithin(group, `[role="radio"]:nth-of-type(${next + 1})`);
+    this.focusWithin(group, '[role="radio"]', next);
   }
 
   private renderValueBadge(value: FlagValue) {
@@ -702,14 +677,19 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   /**
-   * Focus a control that a re-render has just swapped into `container`.
+   * Focus the `index`th control matching `selector` inside `container`, after a
+   * re-render swapped it in.
    *
    * Scoping by the container the interaction started from means the flag never
    * has to be matched by name — which also sidesteps having to escape flag names
    * that contain selector syntax.
+   *
+   * Indexes among *matching* elements rather than using `:nth-of-type()`, which
+   * counts same-tag siblings and would silently pick the wrong control if a
+   * container ever gained a button that is not part of the group.
    */
-  private focusWithin(container: Element | null, selector: string): HTMLElement | null {
-    const element = container?.querySelector<HTMLElement>(selector) ?? null;
+  private focusWithin(container: Element | null, selector: string, index = 0): HTMLElement | null {
+    const element = container?.querySelectorAll<HTMLElement>(selector)[index] ?? null;
     element?.focus();
     return element;
   }

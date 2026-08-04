@@ -1,9 +1,55 @@
 import type { UnleashClient } from 'unleash-proxy-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getTabbableElements } from '../keyboard-controller';
+import { getTabbableElements, rovingIndexForKey } from '../keyboard-controller';
 import { ToolbarStateManager } from '../state';
 import type { InitToolbarOptions, WrappedUnleashClient } from '../types';
 import { ToolbarUI } from '../ui';
+
+describe('rovingIndexForKey', () => {
+  it('should step forward and wrap at the end', () => {
+    expect(rovingIndexForKey('ArrowRight', 0, 3)).toBe(1);
+    expect(rovingIndexForKey('ArrowRight', 2, 3)).toBe(0);
+  });
+
+  it('should step backward and wrap at the start', () => {
+    expect(rovingIndexForKey('ArrowLeft', 2, 3)).toBe(1);
+    expect(rovingIndexForKey('ArrowLeft', 0, 3)).toBe(2);
+  });
+
+  it('should treat the vertical arrows as equivalent', () => {
+    expect(rovingIndexForKey('ArrowDown', 0, 3)).toBe(rovingIndexForKey('ArrowRight', 0, 3));
+    expect(rovingIndexForKey('ArrowUp', 0, 3)).toBe(rovingIndexForKey('ArrowLeft', 0, 3));
+  });
+
+  it('should ignore Home and End unless they are opted into', () => {
+    expect(rovingIndexForKey('Home', 1, 3)).toBeNull();
+    expect(rovingIndexForKey('End', 1, 3)).toBeNull();
+    expect(rovingIndexForKey('Home', 1, 3, { homeEnd: true })).toBe(0);
+    expect(rovingIndexForKey('End', 1, 3, { homeEnd: true })).toBe(2);
+  });
+
+  it('should return null for keys that do not navigate', () => {
+    expect(rovingIndexForKey('a', 0, 3)).toBeNull();
+    expect(rovingIndexForKey('Enter', 0, 3)).toBeNull();
+    expect(rovingIndexForKey('Tab', 0, 3)).toBeNull();
+    expect(rovingIndexForKey('Escape', 0, 3)).toBeNull();
+  });
+
+  it('should stay in range when nothing is selected yet', () => {
+    // indexOf() returns -1 for an unknown current value
+    expect(rovingIndexForKey('ArrowLeft', -1, 3)).toBe(1);
+    expect(rovingIndexForKey('ArrowRight', -1, 3)).toBe(0);
+  });
+
+  it('should handle a single-item group by staying put', () => {
+    expect(rovingIndexForKey('ArrowRight', 0, 1)).toBe(0);
+    expect(rovingIndexForKey('ArrowLeft', 0, 1)).toBe(0);
+  });
+
+  it('should return null for an empty group rather than a bad index', () => {
+    expect(rovingIndexForKey('ArrowRight', 0, 0)).toBeNull();
+  });
+});
 
 describe('keyboard and accessibility', () => {
   let stateManager: ToolbarStateManager;

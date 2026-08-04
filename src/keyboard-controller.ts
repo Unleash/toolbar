@@ -49,6 +49,47 @@ export function getTabbableElements(root: HTMLElement): HTMLElement[] {
   });
 }
 
+/** Arrow keys that step a roving-tabindex selection, and the direction each moves */
+const ROVING_STEPS: Record<string, number> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1,
+};
+
+/**
+ * Resolve a keypress into the index a roving-tabindex group should move to, or
+ * `null` when the key is not one that navigates.
+ *
+ * Shared by the tablist and each flag's override radio group: both walk a short
+ * list with wrap-around, and duplicating the modular arithmetic per widget is
+ * how off-by-one bugs get fixed in one place and missed in the other.
+ *
+ * `homeEnd` is opt-in rather than always on because the two WAI-ARIA patterns
+ * differ: Home/End are expected of a tablist, but not of a radio group. Making it
+ * a parameter records that asymmetry as intentional.
+ */
+export function rovingIndexForKey(
+  key: string,
+  current: number,
+  length: number,
+  options: { homeEnd?: boolean } = {},
+): number | null {
+  if (length === 0) return null;
+
+  const step = ROVING_STEPS[key];
+  if (step !== undefined) {
+    // `current` is -1 when nothing is selected yet; stepping from there still
+    // lands inside the list rather than going negative.
+    return (current + step + length) % length;
+  }
+
+  if (options.homeEnd && key === 'Home') return 0;
+  if (options.homeEnd && key === 'End') return length - 1;
+
+  return null;
+}
+
 /** Static config for the keyboard controller */
 export interface KeyboardControllerConfig {
   shortcut: string | false;
