@@ -21,10 +21,10 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 
 The toolbar is optimized for minimal impact on your application:
 
-- **Core**: ~9.5 KB gzipped
+- **Core**: ~12 KB gzipped (~2.4 KB entry + ~9.6 KB panel UI, loaded asynchronously)
 - **React**: ~0.6 KB gzipped (thin wrapper)
 - **Next.js**: ~0.7 KB gzipped (server utilities)
-- **CSS**: ~2.7 KB gzipped
+- **CSS**: ~3 KB gzipped
 
 ## Installation
 
