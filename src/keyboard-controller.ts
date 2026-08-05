@@ -204,8 +204,15 @@ export class KeyboardController {
     const leaving = event.shiftKey ? index <= 0 : index === tabbables.length - 1;
     if (!leaving) return;
 
-    event.preventDefault();
+    // Being connected is no guarantee the element will take focus: it may be
+    // hidden, disabled, or under an inert ancestor, and focus() fails silently
+    // for all of those. Suppressing the default before knowing whether it worked
+    // would leave Tab doing nothing at all — the hard trap this replaced. So
+    // move first, and only claim the keypress once focus has actually landed.
     origin.focus();
+    if (document.activeElement !== origin) return;
+
+    event.preventDefault();
   }
 
   private onDocumentPointerDown = (event: PointerEvent): void => {
@@ -247,14 +254,15 @@ export class KeyboardController {
 
     if (previous?.isConnected) {
       previous.focus();
-      return;
+      if (document.activeElement === previous) return;
+      // Connected but unfocusable — hidden, disabled, inert. Rather than leave
+      // focus stranded on the body, fall through to the trigger.
     }
 
-    // `isConnected` is not enough on its own: the toolbar hides the floating
-    // icon with an inline `display: none` rather than unmounting it, and
-    // focus() on a hidden element is a silent no-op that would leave focus
-    // stranded on the body.
-    if (fallback?.isConnected && !isHiddenWithin(fallback, this.root)) fallback.focus();
+    // Same reason the check above is on the outcome rather than on `isConnected`:
+    // the toolbar hides the floating icon with an inline `display: none` rather
+    // than unmounting it, and focus() on a hidden element is a silent no-op.
+    fallback?.focus();
   }
 
   destroy(): void {

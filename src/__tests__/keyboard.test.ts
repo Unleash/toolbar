@@ -215,6 +215,18 @@ describe('keyboard and accessibility', () => {
       expect(document.activeElement).toBe(second);
     });
 
+    it('should fall back to the icon when the summoning element refuses focus', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+      input.disabled = true;
+
+      press(panel(), 'Escape');
+
+      // Better the toolbar's own trigger than focus stranded on <body>
+      expect(document.activeElement).toBe(toggle());
+    });
+
     it('should ignore Escape pressed outside the toolbar', () => {
       build({ initiallyVisible: true });
 
@@ -396,6 +408,24 @@ describe('keyboard and accessibility', () => {
       const event = press(last, 'Tab');
 
       expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('should leave Tab alone when the summoning element refuses focus', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+      // Still in the document, but no longer able to take focus. Claiming the
+      // keypress here would leave Tab doing nothing at all — a hard trap.
+      input.disabled = true;
+      const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+      const tabbable = getTabbableElements(root);
+      const last = tabbable[tabbable.length - 1];
+
+      last.focus();
+      const event = press(last, 'Tab');
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(last);
     });
 
     it('should leave Tab alone once the summoning element has been unmounted', () => {
