@@ -123,7 +123,7 @@ export type ThemePreset = 'light' | 'dark';
 /**
  * Where to place keyboard focus when the panel opens.
  *
- * - **panel**: the panel container itself. Screen readers announce the dialog,
+ * - **panel**: the panel container itself. Screen readers announce the region,
  *   and the first Tab moves to the first control. (DEFAULT)
  * - **search**: the flag search input (switches to the Feature Flags tab)
  * - **context**: the first Context field (switches to the Context tab)
@@ -198,14 +198,6 @@ export interface InitToolbarOptions {
    * Accepted modifiers: `mod`, `ctrl`, `meta`/`cmd`, `alt`/`option`, `shift`.
    */
   shortcut?: string | false;
-  /**
-   * Keep Tab / Shift+Tab cycling inside the panel while it is open, so keyboard
-   * users don't fall through into the page behind it (default: true).
-   *
-   * This is a "soft" trap: the page stays interactive for mouse users and is not
-   * marked `inert`, and Escape always releases focus back to the trigger.
-   */
-  trapFocus?: boolean;
   /**
    * Minimize the panel when a pointer press lands outside of it (default: false).
    *

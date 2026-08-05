@@ -93,7 +93,6 @@ export function rovingIndexForKey(
 /** Static config for the keyboard controller */
 export interface KeyboardControllerConfig {
   shortcut: string | false;
-  trapFocus: boolean;
   closeOnOutsideClick: boolean;
 }
 
@@ -112,13 +111,13 @@ export interface KeyboardControllerCallbacks {
  *
  * - a global shortcut that toggles the panel
  * - Escape to minimize while focus is inside the panel
- * - a soft focus trap that keeps Tab cycling within the open panel
+ * - a focus tether that hands Tab back to wherever the panel was summoned from
  * - an optional outside-click minimize
  *
- * "Soft" trap means the page is never marked `inert` and the panel does not
- * claim `aria-modal`: mouse users keep full access to the page underneath, which
- * matters for a tool whose whole point is watching the page react to a flag.
- * Only the Tab sequence is contained, and Escape always releases it.
+ * The panel is deliberately not modal: the page underneath stays interactive,
+ * because watching the page react to a flag change is the entire point of the
+ * tool. Focus is therefore never trapped — Tab out of either end of the panel
+ * leaves it, which WCAG 2.1.2 requires of anything non-modal.
  */
 export class KeyboardController {
   private parsedShortcut: ParsedShortcut | null = null;
@@ -127,7 +126,7 @@ export class KeyboardController {
 
   constructor(
     private root: HTMLElement,
-    private config: KeyboardControllerConfig,
+    config: KeyboardControllerConfig,
     private callbacks: KeyboardControllerCallbacks,
   ) {
     if (config.shortcut !== false) {
@@ -170,33 +169,43 @@ export class KeyboardController {
       return;
     }
 
-    if (event.key === 'Tab' && this.config.trapFocus) {
+    if (event.key === 'Tab') {
       this.handleTab(event);
     }
   };
 
+  /**
+   * Hand Tab back to the summoning element when it steps off either end of the
+   * panel.
+   *
+   * The toolbar is appended to the end of `document.body` (or wherever the host
+   * puts it), so plain document order would drop the user at the browser chrome
+   * rather than where they were reading. Returning to the origin keeps their
+   * place, and unlike a trap it is a real exit: the panel stays open and the
+   * next Tab carries on through the page from that point.
+   *
+   * With no origin to hand back to — the floating icon was clicked, or the
+   * origin has since been unmounted — the browser's own sequencing is left
+   * alone.
+   */
   private handleTab(event: KeyboardEvent): void {
     if (!this.callbacks.isOpen()) return;
+
+    const origin = this.previouslyFocused;
+    if (!origin?.isConnected) return;
 
     const tabbables = getTabbableElements(this.root);
     if (tabbables.length === 0) return;
 
-    const first = tabbables[0];
-    const last = tabbables[tabbables.length - 1];
-    const active = document.activeElement as HTMLElement | null;
+    // -1 covers the panel container itself, which is focusable but skipped by Tab
+    // and sits ahead of every control in it: going forward from there enters the
+    // panel natively, but going back would step straight out into the page.
+    const index = tabbables.indexOf(document.activeElement as HTMLElement);
+    const leaving = event.shiftKey ? index <= 0 : index === tabbables.length - 1;
+    if (!leaving) return;
 
-    // Wrap around at both ends. If focus is somewhere unexpected (e.g. on the
-    // panel container itself, which has tabindex="-1"), Tab still enters the
-    // sequence at the correct end instead of escaping to the page.
-    if (event.shiftKey) {
-      if (active === first || !tabbables.includes(active as HTMLElement)) {
-        event.preventDefault();
-        last.focus();
-      }
-    } else if (active === last || !tabbables.includes(active as HTMLElement)) {
-      event.preventDefault();
-      first.focus();
-    }
+    event.preventDefault();
+    origin.focus();
   }
 
   private onDocumentPointerDown = (event: PointerEvent): void => {
@@ -225,19 +234,27 @@ export class KeyboardController {
   }
 
   /**
-   * Return focus to the toolbar's trigger, or — when the trigger is not rendered
-   * — to whatever held focus before the panel opened.
+   * Return focus to wherever the panel was summoned from, falling back to the
+   * toolbar's own trigger.
+   *
+   * The origin wins because the trigger is only the right target when the
+   * trigger *was* the origin — and on exactly those paths `rememberFocus()` has
+   * already stored `null`, so the fallback takes over on its own.
    */
   restoreFocus(fallback: HTMLElement | null): void {
-    if (fallback?.isConnected) {
-      fallback.focus();
-      this.previouslyFocused = null;
+    const previous = this.previouslyFocused;
+    this.previouslyFocused = null;
+
+    if (previous?.isConnected) {
+      previous.focus();
       return;
     }
 
-    const previous = this.previouslyFocused;
-    this.previouslyFocused = null;
-    if (previous?.isConnected) previous.focus();
+    // `isConnected` is not enough on its own: the toolbar hides the floating
+    // icon with an inline `display: none` rather than unmounting it, and
+    // focus() on a hidden element is a silent no-op that would leave focus
+    // stranded on the body.
+    if (fallback?.isConnected && !isHiddenWithin(fallback, this.root)) fallback.focus();
   }
 
   destroy(): void {

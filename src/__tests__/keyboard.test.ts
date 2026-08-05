@@ -86,6 +86,19 @@ describe('keyboard and accessibility', () => {
   const pressShortcut = (target: HTMLElement | Document = document) =>
     press(target, 'f', { ctrlKey: true, shiftKey: true });
 
+  /** A control on the host page, standing in for the app's own UI */
+  const pageInput = () => {
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    return input;
+  };
+
+  /** Open the panel the way a keyboard user does: from a control on the page */
+  const summonFrom = (origin: HTMLElement) => {
+    origin.focus();
+    pressShortcut();
+  };
+
   beforeEach(() => {
     document.body.innerHTML = '';
     localStorage.clear();
@@ -177,6 +190,31 @@ describe('keyboard and accessibility', () => {
       expect(document.activeElement).toBe(toggle());
     });
 
+    it('should return focus to the summoning element rather than the icon', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+
+      press(panel(), 'Escape');
+
+      // The icon is only the right target when the icon was what opened it
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('should return focus to wherever the user re-entered from', () => {
+      build();
+      const first = pageInput();
+      const second = pageInput();
+      summonFrom(first);
+      // Tabs back out to the page, moves on, then summons the panel again
+      second.focus();
+      pressShortcut();
+
+      press(panel(), 'Escape');
+
+      expect(document.activeElement).toBe(second);
+    });
+
     it('should ignore Escape pressed outside the toolbar', () => {
       build({ initiallyVisible: true });
 
@@ -194,13 +232,6 @@ describe('keyboard and accessibility', () => {
   });
 
   describe('hide() focus ownership', () => {
-    /** A control on the host page, standing in for the app's own UI */
-    const pageInput = () => {
-      const input = document.createElement('input');
-      document.body.appendChild(input);
-      return input;
-    };
-
     it('should not steal focus from the page when the app calls hide()', () => {
       build({ initiallyVisible: true });
       const input = pageInput();
@@ -246,7 +277,7 @@ describe('keyboard and accessibility', () => {
     });
   });
 
-  describe('focus trap', () => {
+  describe('focus tether', () => {
     it('should list only visible controls as tabbable', () => {
       build();
       const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
@@ -276,8 +307,10 @@ describe('keyboard and accessibility', () => {
       expect(getTabbableElements(root)).not.toContain(panel());
     });
 
-    it('should wrap Tab from the last control back to the first', () => {
-      build({ initiallyVisible: true });
+    it('should hand Tab off the last control back to the summoning element', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
       const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
       const tabbable = getTabbableElements(root);
       const last = tabbable[tabbable.length - 1];
@@ -286,24 +319,62 @@ describe('keyboard and accessibility', () => {
       const event = press(last, 'Tab');
 
       expect(event.defaultPrevented).toBe(true);
-      expect(document.activeElement).toBe(tabbable[0]);
+      expect(document.activeElement).toBe(input);
     });
 
-    it('should wrap Shift+Tab from the first control back to the last', () => {
-      build({ initiallyVisible: true });
+    it('should hand Shift+Tab off the first control back to the summoning element', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
       const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
-      const tabbable = getTabbableElements(root);
-      const first = tabbable[0];
+      const first = getTabbableElements(root)[0];
 
       first.focus();
       const event = press(first, 'Tab', { shiftKey: true });
 
       expect(event.defaultPrevented).toBe(true);
-      expect(document.activeElement).toBe(tabbable[tabbable.length - 1]);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('should hand Shift+Tab off the panel container back to the summoning element', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+
+      // Where focusOnOpen: 'panel' leaves you, so it is the first Shift+Tab a
+      // keyboard user presses. Forward from here the browser enters the panel.
+      expect(document.activeElement).toBe(panel());
+      const event = press(panel(), 'Tab', { shiftKey: true });
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('should let Tab enter the panel from its container', () => {
+      build();
+      summonFrom(pageInput());
+
+      const event = press(panel(), 'Tab');
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('should leave the panel open when Tab leaves it', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+      const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+      const tabbable = getTabbableElements(root);
+
+      press(tabbable[tabbable.length - 1], 'Tab');
+
+      // The whole point of not trapping: keep watching the page with the panel up
+      expect(isOpen()).toBe(true);
     });
 
     it('should let Tab move normally between interior controls', () => {
-      build({ initiallyVisible: true });
+      build();
+      summonFrom(pageInput());
       const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
       const tabbable = getTabbableElements(root);
 
@@ -314,19 +385,24 @@ describe('keyboard and accessibility', () => {
       expect(event.defaultPrevented).toBe(false);
     });
 
-    it('should pull focus into the panel when Tab is pressed on the container', () => {
+    it('should leave Tab alone when there is no summoning element to return to', () => {
+      // Opened by clicking the floating icon, so the origin is the toolbar itself
       build({ initiallyVisible: true });
       const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+      const tabbable = getTabbableElements(root);
+      const last = tabbable[tabbable.length - 1];
 
-      panel().focus();
-      const event = press(panel(), 'Tab');
+      last.focus();
+      const event = press(last, 'Tab');
 
-      expect(event.defaultPrevented).toBe(true);
-      expect(document.activeElement).toBe(getTabbableElements(root)[0]);
+      expect(event.defaultPrevented).toBe(false);
     });
 
-    it('should not trap when trapFocus is false', () => {
-      build({ initiallyVisible: true, trapFocus: false });
+    it('should leave Tab alone once the summoning element has been unmounted', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+      input.remove();
       const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
       const tabbable = getTabbableElements(root);
       const last = tabbable[tabbable.length - 1];
@@ -348,12 +424,28 @@ describe('keyboard and accessibility', () => {
       expect(isOpen()).toBe(true);
     });
 
-    it('should close the panel when it is already open', () => {
+    it('should close the panel when it is already open and holds focus', () => {
       build({ initiallyVisible: true });
+      panel().focus();
 
       pressShortcut();
 
       expect(isOpen()).toBe(false);
+    });
+
+    it('should pull focus back into an open panel instead of closing it', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+      // User has tabbed back out to the page, panel still up
+      input.focus();
+
+      pressShortcut();
+
+      // Closing here would throw away a panel the user is still reading, and
+      // with the tether in place the shortcut is the only way back in
+      expect(isOpen()).toBe(true);
+      expect(panel().contains(document.activeElement)).toBe(true);
     });
 
     it('should prevent the default browser action when it fires', () => {
@@ -395,6 +487,20 @@ describe('keyboard and accessibility', () => {
 
       expect(isOpen()).toBe(false);
       expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('should hand focus back when hidden until refresh, with no icon to land on', () => {
+      build();
+      const input = pageInput();
+      summonFrom(input);
+      const hideButton = container.querySelectorAll('.ut-btn-close')[1] as HTMLElement;
+
+      hideButton.focus();
+      hideButton.click();
+
+      // Nothing of the toolbar is left to hold focus, so without the hand-off
+      // it would sit on <body> and the next Tab would restart from the top
+      expect(document.activeElement).toBe(input);
     });
 
     it('should reopen a toolbar that was hidden until refresh', () => {
@@ -571,11 +677,13 @@ describe('keyboard and accessibility', () => {
     });
   });
 
-  describe('dialog semantics', () => {
-    it('should mark the panel as a dialog with a name', () => {
+  describe('panel semantics', () => {
+    it('should mark the panel as a named landmark region', () => {
       build({ initiallyVisible: true });
 
-      expect(panel().getAttribute('role')).toBe('dialog');
+      // A region, not a dialog: nothing here is modal, and a landmark can be
+      // reached from a screen reader's rotor without hunting through Tab order
+      expect(panel().getAttribute('role')).toBe('region');
 
       const labelId = panel().getAttribute('aria-labelledby');
       expect(container.querySelector(`#${labelId}`)?.textContent).toBe('Unleash Toolbar');

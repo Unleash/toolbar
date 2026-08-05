@@ -52,7 +52,7 @@ export class ToolbarUI implements IToolbarUI {
   // Owns toolbar placement + the drag-to-move interaction
   private drag: DragController;
 
-  // Owns the shortcut, Escape, the focus trap and outside clicks
+  // Owns the shortcut, Escape, the focus tether and outside clicks
   private keyboard: KeyboardController;
 
   // Ephemeral "fully hidden" state (NOT persisted): the toolbar reappears on
@@ -115,13 +115,12 @@ export class ToolbarUI implements IToolbarUI {
       { onOpen: () => this.show(), requestRender: () => this.render() },
     );
 
-    // All keyboard interaction (shortcut, Escape, focus trap) plus the optional
-    // outside-click close live in their own controller.
+    // All keyboard interaction (shortcut, Escape, the focus tether) plus the
+    // optional outside-click close live in their own controller.
     this.keyboard = new KeyboardController(
       this.rootElement,
       {
         shortcut: options.shortcut ?? DEFAULT_SHORTCUT,
-        trapFocus: options.trapFocus ?? true,
         closeOnOutsideClick: options.closeOnOutsideClick ?? false,
       },
       {
@@ -201,12 +200,27 @@ export class ToolbarUI implements IToolbarUI {
     return active !== null && this.rootElement.contains(active);
   }
 
+  /**
+   * Three states, not two. Once Tab can carry focus out of an open panel, the
+   * shortcut is also the only way back in, so pressing it from the page pulls
+   * focus into the panel instead of closing a panel the user is still reading.
+   * Only a press from inside the toolbar means "done with this".
+   */
   toggle(options: ShowToolbarOptions = {}): void {
-    if (this.isPanelOpen()) {
-      this.minimize();
-    } else {
+    if (!this.isPanelOpen()) {
       this.show(options);
+      return;
     }
+
+    if (!this.containsFocus()) {
+      // Re-entering from somewhere new: Escape has to hand focus back to where
+      // the user is *now*, not to where they were when they first opened it.
+      this.keyboard.rememberFocus();
+      this.applyFocus(options.focus ?? this.focusOnOpen);
+      return;
+    }
+
+    this.minimize();
   }
 
   /**
@@ -249,9 +263,16 @@ export class ToolbarUI implements IToolbarUI {
    * the header's close (×) button.
    */
   private hideCompletely(): void {
+    // Nothing of the toolbar survives this, so unlike hide() there is no icon to
+    // fall back to — without the hand-off focus would drop to the body and the
+    // next Tab would restart from the top of the document.
+    const heldFocus = this.containsFocus();
+
     this.hiddenCompletely = true;
     this.stateManager.setVisibility(false);
     this.render();
+
+    if (heldFocus) this.keyboard.restoreFocus(null);
   }
 
   destroy(): void {
@@ -283,10 +304,13 @@ export class ToolbarUI implements IToolbarUI {
         <span class="ut-sr-only">Open Unleash Toolbar</span>
       </button>
 
+      <!-- A labelled region rather than a dialog: nothing here is modal, and a
+           landmark is reachable from a screen reader's rotor without depending
+           on where the toolbar happens to sit in the tab order. -->
       <div
         class="unleash-toolbar"
         style=${showPanel ? 'display: flex;' : 'display: none;'}
-        role="dialog"
+        role="region"
         aria-labelledby="${this.uid}-title"
         tabindex="-1"
       >

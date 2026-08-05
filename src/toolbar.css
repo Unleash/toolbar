@@ -977,10 +977,18 @@
   outline-offset: 3px;
 }
 
-/* The panel takes focus programmatically when opened by keyboard. Its border and
-   shadow already delimit it, so a ring around the whole dialog is just noise. */
+/* The panel takes focus programmatically when opened by keyboard, and lands on
+   the container rather than a control so screen readers announce the region and
+   its name. Sighted keyboard users get nothing out of that, so the ring is the
+   only thing telling them focus has left the page. :focus-visible keeps it off
+   when the panel is opened by clicking the floating icon. */
 .unleash-toolbar-container .unleash-toolbar:focus {
   outline: none;
+}
+
+.unleash-toolbar-container .unleash-toolbar:focus-visible {
+  outline: 2px solid var(--ut-focus);
+  outline-offset: 2px;
 }
 
 .unleash-toolbar .ut-tab:focus-visible,

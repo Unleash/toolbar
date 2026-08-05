@@ -356,9 +356,6 @@ interface InitToolbarOptions {
   // global key listener.
   shortcut?: string | false;
 
-  // Keep Tab / Shift+Tab cycling inside the panel while it is open (default: true)
-  trapFocus?: boolean;
-
   // Minimize the panel when a pointer press lands outside it (default: false)
   closeOnOutsideClick?: boolean;
 
@@ -572,17 +569,34 @@ of both the tab order and the accessibility tree while hidden.
 
 ### Focus behaviour
 
-While the panel is open, `Tab` cycles within it rather than falling through to
-the page behind. This is a **soft** trap: the page underneath is never marked
-`inert` and the panel does not claim `aria-modal`, so mouse interaction with your
-app is unaffected. `Esc` always releases the trap and hands focus back to the
-floating icon (or to whatever held it before, when the icon isn't rendered).
+The panel is not modal. The page underneath stays interactive, is never marked
+`inert`, and focus is never trapped — watching your app react to a flag change is
+the whole point of the tool, and a keyboard user has to be able to get back out
+there.
 
-Disable it with `trapFocus: false`.
+Opened from the keyboard, focus lands on the panel itself rather than on a
+control, so screen readers announce the region and its name — and the panel draws
+a focus ring so sighted keyboard users can see that focus has left the page. The
+ring stays off when the panel is opened by clicking the floating icon.
+
+From there, focus is **tethered** to wherever the panel was summoned from:
+
+- `Tab` off the last control (or `Shift+Tab` off the first) returns focus to the
+  element you opened the panel from, leaving the panel open. The next `Tab`
+  carries on through your page from that point.
+- The shortcut is the way back in. Pressed from the page with the panel open it
+  pulls focus into the panel rather than closing it; pressed from inside the
+  panel it minimizes.
+- `Esc` inside the panel minimizes and hands focus back to the same origin — or
+  to the floating icon when the icon is what opened it.
+
+Without an origin to return to (the panel was opened by clicking the icon, or the
+origin has since been unmounted), `Tab` is left to the browser's own ordering.
 
 ### Semantics
 
-- The panel is a `dialog` labelled by its title
+- The panel is a labelled `region` landmark, so assistive tech can jump straight
+  to it regardless of where the toolbar sits in the tab order
 - Tabs use the WAI-ARIA tabs pattern, with arrow-key navigation and a roving tab stop
 - Each flag's OFF / — / ON control is a `radiogroup` labelled with the flag name,
   so assistive tech reports which state is in effect. Its roving tab stop also
