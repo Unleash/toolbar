@@ -707,6 +707,95 @@ describe('keyboard and accessibility', () => {
     });
   });
 
+  describe('search result announcements', () => {
+    const liveRegion = () => container.querySelector('[role="status"]') as HTMLElement;
+    const searchInput = () => container.querySelector('.ut-search-input') as HTMLInputElement;
+
+    const type = (value: string) => {
+      searchInput().value = value;
+      searchInput().dispatchEvent(new Event('input'));
+    };
+
+    /** Let the announcement debounce elapse */
+    const settle = () => vi.advanceTimersByTime(500);
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      stateManager.recordEvaluation('checkout-v2', 'flag', true, true, {});
+      stateManager.recordEvaluation('checkout-v3', 'flag', true, true, {});
+      stateManager.recordEvaluation('search-beta', 'flag', true, true, {});
+      build({ initiallyVisible: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should keep the live region mounted and empty before any search', () => {
+      // It has to be in the DOM ahead of the change it describes, or assistive
+      // tech has nothing to watch
+      expect(liveRegion()).toBeTruthy();
+      expect(liveRegion().textContent?.trim()).toBe('');
+      expect(liveRegion().classList.contains('ut-sr-only')).toBe(true);
+    });
+
+    it('should announce the match count once typing settles', () => {
+      type('checkout');
+
+      expect(liveRegion().textContent?.trim()).toBe('');
+
+      settle();
+
+      expect(liveRegion().textContent?.trim()).toBe('2 flags match "checkout"');
+    });
+
+    it('should announce a single match in the singular', () => {
+      type('search-beta');
+      settle();
+
+      expect(liveRegion().textContent?.trim()).toBe('1 flag matches "search-beta"');
+    });
+
+    it('should announce an empty result', () => {
+      type('nonexistent');
+      settle();
+
+      expect(liveRegion().textContent?.trim()).toBe('No flags match "nonexistent"');
+    });
+
+    it('should announce once per burst rather than once per keystroke', () => {
+      type('c');
+      type('ch');
+      type('che');
+      settle();
+
+      expect(liveRegion().textContent?.trim()).toBe('2 flags match "che"');
+    });
+
+    it('should fall silent when the search is cleared', () => {
+      type('checkout');
+      settle();
+
+      type('');
+      settle();
+
+      // The empty field already says it, and an empty region announces nothing
+      expect(liveRegion().textContent?.trim()).toBe('');
+    });
+
+    it('should drop a pending announcement when the toolbar is destroyed', () => {
+      type('checkout');
+      // The detached tree stays live, so a surviving timer would still write to it
+      const detached = liveRegion();
+
+      toolbar?.destroy();
+      toolbar = null;
+      settle();
+
+      expect(detached.textContent?.trim()).toBe('');
+    });
+  });
+
   describe('panel semantics', () => {
     it('should mark the panel as a named landmark region', () => {
       build({ initiallyVisible: true });
