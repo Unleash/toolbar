@@ -436,12 +436,31 @@
   flex-direction: column;
 }
 
+/* The active tab panel has to be a flex column of its own, or the flag list's
+   flex: 1 has no parent to grow into and the footer floats up under it with
+   dead space below. Inactive panels keep their inline display: none. */
+.unleash-toolbar .ut-content > [role='tabpanel'] {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .unleash-toolbar .ut-tab-header {
   padding: 12px 16px;
   background: var(--ut-bg);
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
+}
+
+.unleash-toolbar .ut-tab-footer {
+  padding: 12px 16px;
+  background: var(--ut-bg);
+  border-top: 1px solid var(--ut-border);
+  display: flex;
+  justify-content: flex-end;
   flex-shrink: 0;
 }
 
@@ -469,7 +488,7 @@
   opacity: 0.5;
 }
 
-.unleash-toolbar .ut-tab-header .ut-btn {
+.unleash-toolbar .ut-tab-footer .ut-btn {
   background: var(--ut-primary);
   border: none;
   color: white;
@@ -484,7 +503,7 @@
   flex-shrink: 0;
 }
 
-.unleash-toolbar .ut-tab-header .ut-btn:hover {
+.unleash-toolbar .ut-tab-footer .ut-btn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -1011,7 +1030,7 @@
  * they keep the standard ring — just pushed out far enough to read against the
  * button's own fill rather than blending into it.
  */
-.unleash-toolbar .ut-tab-header .ut-btn:focus-visible {
+.unleash-toolbar .ut-tab-footer .ut-btn:focus-visible {
   outline-offset: 2px;
 }
 
