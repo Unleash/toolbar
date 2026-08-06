@@ -1,6 +1,6 @@
 {
   "name": "@unleash/toolbar",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Client-side override toolbar for Unleash JavaScript SDKs",
   "type": "module",
   "main": "./dist/index.es.js",
@@ -102,8 +102,8 @@
     "typescript-eslint": "^8.49.0",
     "unleash-client": "^6.9.3",
     "unleash-proxy-client": "^3.4.1",
-    "vite": "^8.0.16",
     "unplugin-dts": "^1.0.3",
+    "vite": "^8.0.16",
     "vitest": "^4.0.15"
   },
   "dependencies": {
