@@ -101,12 +101,42 @@ export interface ToolbarThemeOptions {
   textColor?: string;
   borderColor?: string;
   fontFamily?: string;
+  /**
+   * Keyboard focus ring colour for controls on the panel background.
+   *
+   * Defaults to the ring that ships with the active `themePreset` — a mid purple
+   * on light, a lighter purple on dark, both above the 3:1 contrast WCAG asks of
+   * non-text indicators. Set this when a custom `backgroundColor` would leave
+   * that default hard to see.
+   *
+   * Controls on the header keep a white ring, since `primaryColor` already has to
+   * be dark enough to carry the header's white text.
+   */
+  focusColor?: string;
 }
 
 /**
  * Built-in theme presets
  */
 export type ThemePreset = 'light' | 'dark';
+
+/**
+ * Where to place keyboard focus when the panel opens.
+ *
+ * - **panel**: the panel container itself. Screen readers announce the dialog,
+ *   and the first Tab moves to the first control. (DEFAULT)
+ * - **search**: the flag search input (switches to the Feature Flags tab)
+ * - **context**: the first Context field (switches to the Context tab)
+ */
+export type ToolbarFocusTarget = 'panel' | 'search' | 'context';
+
+/**
+ * Options accepted by `show()`
+ */
+export interface ShowToolbarOptions {
+  /** Where to place focus once the panel is open (default: the `focusOnOpen` option) */
+  focus?: ToolbarFocusTarget;
+}
 
 /**
  * Initialization options for the toolbar
@@ -151,6 +181,43 @@ export interface InitToolbarOptions {
   sortAlphabetically?: boolean;
   /** Enable cookie synchronization for server-side rendering (Next.js) (default: false) */
   enableCookieSync?: boolean;
+  /**
+   * Render the floating toggle icon when the panel is collapsed (default: true).
+   *
+   * Set to `false` for a shortcut-driven setup where the toolbar renders nothing
+   * until it is opened. Note that with `showToggleButton: false` and
+   * `shortcut: false` the only way back in is the programmatic API, so keep at
+   * least one of them enabled.
+   */
+  showToggleButton?: boolean;
+  /**
+   * Keyboard shortcut that toggles the panel open/closed, e.g. `'mod+shift+f'`
+   * (the default). `mod` is Cmd on macOS and Ctrl elsewhere. Set to `false` to
+   * register no global key listener at all.
+   *
+   * Accepted modifiers: `mod`, `ctrl`, `meta`/`cmd`, `alt`/`option`, `shift`.
+   */
+  shortcut?: string | false;
+  /**
+   * Keep Tab / Shift+Tab cycling inside the panel while it is open, so keyboard
+   * users don't fall through into the page behind it (default: true).
+   *
+   * This is a "soft" trap: the page stays interactive for mouse users and is not
+   * marked `inert`, and Escape always releases focus back to the trigger.
+   */
+  trapFocus?: boolean;
+  /**
+   * Minimize the panel when a pointer press lands outside of it (default: false).
+   *
+   * Off by default because the common workflow is to flip a flag and then click
+   * around the page to see the effect — which this would interrupt.
+   */
+  closeOnOutsideClick?: boolean;
+  /**
+   * Where to place focus when the panel is opened by the keyboard shortcut or by
+   * `show()` without an explicit target (default: 'panel').
+   */
+  focusOnOpen?: ToolbarFocusTarget;
 }
 
 /**
@@ -183,8 +250,9 @@ export type ToolbarEventListener = (event: ToolbarEvent) => void;
  * Toolbar UI interface (implemented by UI modules)
  */
 export interface IToolbarUI {
-  show(): void;
+  show(options?: ShowToolbarOptions): void;
   hide(): void;
+  toggle(options?: ShowToolbarOptions): void;
   destroy(): void;
 }
 
@@ -195,8 +263,14 @@ export interface UnleashToolbarInstance {
   // Wrapped client is exposed for direct use
   readonly client: WrappedUnleashClient;
 
-  show(): void;
+  /**
+   * Open the panel. Pass `{ focus }` to place focus on a specific control, e.g.
+   * `show({ focus: 'search' })`.
+   */
+  show(options?: ShowToolbarOptions): void;
   hide(): void;
+  /** Open the panel if it is collapsed, minimize it if it is open */
+  toggle(options?: ShowToolbarOptions): void;
   destroy(): void;
 
   getState(): ToolbarState;

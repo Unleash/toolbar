@@ -13,6 +13,7 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 - **Next.js SSR Support**: Server-side rendering with cookie-based state sync using `@unleash/nextjs`
 - **Customizable UI**: Theming support and positioning options
 - **Draggable & Dismissible**: Drag the floating icon to any window edge, minimize to the icon, or hide it entirely until the next page refresh
+- **Keyboard First**: `Cmd/Ctrl+Shift+F` to toggle, `Esc` to minimize, focus containment while open, and full screen-reader semantics
 - **Custom Banner**: Optional message in the toolbar to clarify its scope for your team
 - **SDK Compatible**: Works with Unleash JavaScript SDK
 
@@ -20,10 +21,10 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 
 The toolbar is optimized for minimal impact on your application:
 
-- **Core**: ~9.5 KB gzipped
+- **Core**: ~12 KB gzipped (~2.4 KB entry + ~9.6 KB panel UI, loaded asynchronously)
 - **React**: ~0.6 KB gzipped (thin wrapper)
 - **Next.js**: ~0.7 KB gzipped (server utilities)
-- **CSS**: ~2.7 KB gzipped
+- **CSS**: ~3 KB gzipped
 
 ## Installation
 
@@ -344,6 +345,25 @@ interface InitToolbarOptions {
   // Enable cookie sync for SSR (default: false)
   // Set to true for Next.js or other SSR frameworks
   enableCookieSync?: boolean;
+
+  // Render the floating toggle icon when collapsed (default: true)
+  // Set to false for a shortcut-only setup where the toolbar renders nothing
+  // until it is opened.
+  showToggleButton?: boolean;
+
+  // Keyboard shortcut that toggles the panel (default: 'mod+shift+f')
+  // 'mod' is Cmd on macOS and Ctrl elsewhere. Set to false to register no
+  // global key listener.
+  shortcut?: string | false;
+
+  // Keep Tab / Shift+Tab cycling inside the panel while it is open (default: true)
+  trapFocus?: boolean;
+
+  // Minimize the panel when a pointer press lands outside it (default: false)
+  closeOnOutsideClick?: boolean;
+
+  // Where to place focus when the panel opens (default: 'panel')
+  focusOnOpen?: 'panel' | 'search' | 'context';
 }
 ```
 
@@ -400,6 +420,12 @@ const toolbar = window.unleashToolbar;
 // Show/hide the toolbar
 toolbar.show();
 toolbar.hide();
+toolbar.toggle();
+
+// Open with focus on a specific control
+toolbar.show({ focus: 'search' });   // flag search box
+toolbar.show({ focus: 'context' });  // first Context field (switches tab)
+toolbar.show({ focus: 'panel' });    // the panel itself (default)
 
 // Get current state
 const state = toolbar.getState();
@@ -498,6 +524,72 @@ const variant = useVariant('my-experiment');
 - **Reset Context**: Clear all context overrides
 - **Close**: Hide the toolbar
 
+## Keyboard & Accessibility
+
+The toolbar is fully operable from the keyboard.
+
+### Shortcuts
+
+| Key | Action |
+| --- | --- |
+| `Cmd/Ctrl + Shift + F` | Toggle the panel open or closed |
+| `Esc` | Minimize to the floating icon (while focus is inside the panel) |
+| `Tab` / `Shift + Tab` | Move between controls; cycles within the panel while open |
+| `←` `→` | Switch tabs (while a tab has focus) |
+| `←` `→` | Change a flag's override between OFF / — / ON |
+
+Rebind or disable the shortcut with the `shortcut` option:
+
+```javascript
+initUnleashToolbar(client, {
+  shortcut: 'mod+shift+u', // 'mod' is Cmd on macOS, Ctrl elsewhere
+});
+
+initUnleashToolbar(client, {
+  shortcut: false, // register no global key listener
+});
+```
+
+### Shortcut-driven setup
+
+To render nothing until the toolbar is summoned, and land directly in the flag
+search box:
+
+```javascript
+initUnleashToolbar(client, {
+  showToggleButton: false,
+  focusOnOpen: 'search',
+});
+```
+
+The toolbar stays mounted and listening while "closed" — it is hidden with
+`display: none`, so there is no re-initialization cost on reopen, and it is out
+of both the tab order and the accessibility tree while hidden.
+
+> With `showToggleButton: false` **and** `shortcut: false` there is no way for a
+> user to reopen the toolbar; only the programmatic API can. Keep at least one of
+> them enabled.
+
+### Focus behaviour
+
+While the panel is open, `Tab` cycles within it rather than falling through to
+the page behind. This is a **soft** trap: the page underneath is never marked
+`inert` and the panel does not claim `aria-modal`, so mouse interaction with your
+app is unaffected. `Esc` always releases the trap and hands focus back to the
+floating icon (or to whatever held it before, when the icon isn't rendered).
+
+Disable it with `trapFocus: false`.
+
+### Semantics
+
+- The panel is a `dialog` labelled by its title
+- Tabs use the WAI-ARIA tabs pattern, with arrow-key navigation and a roving tab stop
+- Each flag's OFF / — / ON control is a `radiogroup` labelled with the flag name,
+  so assistive tech reports which state is in effect. Its roving tab stop also
+  means a flag costs one `Tab` press to pass, not three
+- Icon-only controls carry visually hidden text rather than relying on `title`
+- Animations are suppressed under `prefers-reduced-motion: reduce`
+
 ## Theme Customization
 
 Override CSS variables or use the theme option:
@@ -509,8 +601,27 @@ const toolbar = initUnleashSessionToolbar({
     backgroundColor: '#ffffff',
     textColor: '#2d3436',
     borderColor: '#dfe6e9',
-    fontFamily: 'Inter, sans-serif'
+    fontFamily: 'Inter, sans-serif',
+    focusColor: '#ff6b6b' // keyboard focus ring; optional
   }
+});
+```
+
+### Focus ring colour
+
+The keyboard focus ring follows `themePreset` automatically — a mid purple on
+`light`, a lighter purple on `dark`, both above the 3:1 contrast ratio WCAG
+requires of non-text indicators. Controls on the coloured header use a white ring
+instead, since `primaryColor` already has to be dark enough to carry the header's
+white text.
+
+Set `theme.focusColor` only when a custom `backgroundColor` would leave the
+default ring hard to see — e.g. a dark `backgroundColor` while staying on the
+`light` preset:
+
+```javascript
+initUnleashToolbar(client, {
+  theme: { backgroundColor: '#101010', textColor: '#f5f5f5', focusColor: '#A9A6F5' },
 });
 ```
 

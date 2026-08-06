@@ -4,6 +4,7 @@ import type {
   FlagOverride,
   InitToolbarOptions,
   IToolbarUI,
+  ShowToolbarOptions,
   ToolbarState,
   UnleashContext,
   UnleashToolbarInstance,
@@ -41,12 +42,16 @@ export class UnleashToolbar implements UnleashToolbarInstance {
     this.ui = new ToolbarUI(stateManager, wrappedClient, options);
   }
 
-  show(): void {
-    if (this.ui) this.ui.show();
+  show(options?: ShowToolbarOptions): void {
+    if (this.ui) this.ui.show(options);
   }
 
   hide(): void {
     if (this.ui) this.ui.hide();
+  }
+
+  toggle(options?: ShowToolbarOptions): void {
+    if (this.ui) this.ui.toggle(options);
   }
 
   destroy(): void {
