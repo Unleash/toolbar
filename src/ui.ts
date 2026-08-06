@@ -518,9 +518,6 @@ export class ToolbarUI implements IToolbarUI {
                is read whole. -->
           <div class="ut-sr-only" role="status">${this.searchAnnouncement}</div>
         </div>
-        <button class="ut-btn" @click=${() => this.stateManager.resetOverrides()}>
-          Reset All Overrides
-        </button>
       </div>
       <div class="ut-flag-list">
         ${
@@ -528,6 +525,11 @@ export class ToolbarUI implements IToolbarUI {
             ? filteredFlags.map((name) => this.renderFlagItem(name))
             : html`<div class="ut-empty">No flags match "${this.searchQuery}"</div>`
         }
+      </div>
+      <div class="ut-tab-footer">
+        <button class="ut-btn" @click=${() => this.stateManager.resetOverrides()}>
+          Reset All Overrides
+        </button>
       </div>
     `;
   }
@@ -873,11 +875,6 @@ export class ToolbarUI implements IToolbarUI {
     const customProperties = Object.fromEntries(customPropertiesArray);
 
     return html`
-      <div class="ut-tab-header">
-        <button class="ut-btn" @click=${() => this.stateManager.resetContextOverrides()}>
-          Reset All Context
-        </button>
-      </div>
       <div class="ut-context-form">
         ${this.renderContextField('User ID', 'userId', 'user-123', mergedContext.userId || '', this.isFieldOverridden('userId', baseContext, contextOverrides))}
         ${this.renderContextField('Session ID', 'sessionId', 'session-456', mergedContext.sessionId || '', this.isFieldOverridden('sessionId', baseContext, contextOverrides))}
@@ -891,6 +888,11 @@ export class ToolbarUI implements IToolbarUI {
             ${this.renderProperties(customProperties || {}, baseProperties)}
           </div>
         </div>
+      </div>
+      <div class="ut-tab-footer">
+        <button class="ut-btn" @click=${() => this.stateManager.resetContextOverrides()}>
+          Reset All Context
+        </button>
       </div>
     `;
   }
