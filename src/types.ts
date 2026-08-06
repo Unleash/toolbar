@@ -191,9 +191,12 @@ export interface InitToolbarOptions {
    */
   showToggleButton?: boolean;
   /**
-   * Keyboard shortcut that toggles the panel open/closed, e.g. `'mod+shift+f'`
-   * (the default). `mod` is Cmd on macOS and Ctrl elsewhere. Set to `false` to
-   * register no global key listener at all.
+   * Keyboard shortcut that summons the panel, e.g. `'mod+shift+f'` (the
+   * default). It has three states: it opens a collapsed panel, moves focus into
+   * an open one, and minimizes only when pressed from inside the toolbar.
+   *
+   * `mod` is Cmd on macOS and Ctrl elsewhere. Set to `false` to register no
+   * global key listener at all.
    *
    * Accepted modifiers: `mod`, `ctrl`, `meta`/`cmd`, `alt`/`option`, `shift`.
    */
@@ -261,7 +264,10 @@ export interface UnleashToolbarInstance {
    */
   show(options?: ShowToolbarOptions): void;
   hide(): void;
-  /** Open the panel if it is collapsed, minimize it if it is open */
+  /**
+   * Open the panel if it is collapsed, move focus into it if it is open but
+   * focus is elsewhere, and minimize it only when focus is already inside.
+   */
   toggle(options?: ShowToolbarOptions): void;
   destroy(): void;
 

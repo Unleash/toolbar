@@ -13,7 +13,7 @@ A client-side debugging toolbar for [Unleash](https://www.getunleash.io/) featur
 - **Next.js SSR Support**: Server-side rendering with cookie-based state sync using `@unleash/nextjs`
 - **Customizable UI**: Theming support and positioning options
 - **Draggable & Dismissible**: Drag the floating icon to any window edge, minimize to the icon, or hide it entirely until the next page refresh
-- **Keyboard First**: `Cmd/Ctrl+Shift+F` to toggle, `Esc` to minimize, focus containment while open, and full screen-reader semantics
+- **Keyboard First**: `Cmd/Ctrl+Shift+F` to summon, `Esc` to minimize, focus tethered back to wherever you opened it from, and full screen-reader semantics
 - **Custom Banner**: Optional message in the toolbar to clarify its scope for your team
 - **SDK Compatible**: Works with Unleash JavaScript SDK
 
@@ -351,7 +351,8 @@ interface InitToolbarOptions {
   // until it is opened.
   showToggleButton?: boolean;
 
-  // Keyboard shortcut that toggles the panel (default: 'mod+shift+f')
+  // Keyboard shortcut that opens the panel, focuses it when already open, and
+  // minimizes it when pressed from inside (default: 'mod+shift+f')
   // 'mod' is Cmd on macOS and Ctrl elsewhere. Set to false to register no
   // global key listener.
   shortcut?: string | false;
@@ -417,6 +418,7 @@ const toolbar = window.unleashToolbar;
 // Show/hide the toolbar
 toolbar.show();
 toolbar.hide();
+// Opens, or focuses an already-open panel, or minimizes it if focus is inside
 toolbar.toggle();
 
 // Open with focus on a specific control
@@ -529,9 +531,9 @@ The toolbar is fully operable from the keyboard.
 
 | Key | Action |
 | --- | --- |
-| `Cmd/Ctrl + Shift + F` | Toggle the panel open or closed |
-| `Esc` | Minimize to the floating icon (while focus is inside the panel) |
-| `Tab` / `Shift + Tab` | Move between controls; cycles within the panel while open |
+| `Cmd/Ctrl + Shift + F` | Open the panel, focus it when it is already open, or minimize it when pressed from inside |
+| `Esc` | Minimize, handing focus back to wherever you opened the panel from |
+| `Tab` / `Shift + Tab` | Move between controls; off either end, focus returns to the page where you left it |
 | `←` `→` | Switch tabs (while a tab has focus) |
 | `←` `→` | Change a flag's override between OFF / — / ON |
 

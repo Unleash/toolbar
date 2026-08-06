@@ -109,7 +109,7 @@ export interface KeyboardControllerCallbacks {
 /**
  * Owns every keyboard and outside-pointer interaction for the toolbar:
  *
- * - a global shortcut that toggles the panel
+ * - a global shortcut that summons, refocuses, or minimizes the panel
  * - Escape to minimize while focus is inside the panel
  * - a focus tether that hands Tab back to wherever the panel was summoned from
  * - an optional outside-click minimize
