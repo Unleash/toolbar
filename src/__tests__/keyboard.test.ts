@@ -772,14 +772,14 @@ describe('keyboard and accessibility', () => {
       expect(liveRegion().textContent?.trim()).toBe('2 flags match "che"');
     });
 
-    it('should fall silent when the search is cleared', () => {
+    it('should fall silent as soon as the search is cleared', () => {
       type('checkout');
       settle();
 
       type('');
-      settle();
 
-      // The empty field already says it, and an empty region announces nothing
+      // Without waiting out the debounce: the region is only visually hidden, so
+      // a stale count is still readable by the virtual cursor until it is gone
       expect(liveRegion().textContent?.trim()).toBe('');
     });
 

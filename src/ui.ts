@@ -541,11 +541,22 @@ export class ToolbarUI implements IToolbarUI {
 
   private updateSearch(query: string): void {
     this.searchQuery = query;
-    this.render();
 
     // The list itself updates on every keystroke; only the spoken summary waits,
     // or a screen reader would queue one announcement per character typed.
     clearTimeout(this.announceTimer);
+
+    // A cleared search has nothing to wait for and nothing to say. Dropping the
+    // old summary now rather than at the end of the delay matters because the
+    // region is only *visually* hidden: for those few hundred milliseconds the
+    // virtual cursor could still read a match count for a search that is gone.
+    if (!query) {
+      this.searchAnnouncement = '';
+      this.render();
+      return;
+    }
+
+    this.render();
     this.announceTimer = setTimeout(() => this.announceMatches(), SEARCH_ANNOUNCE_DELAY_MS);
   }
 
@@ -553,10 +564,7 @@ export class ToolbarUI implements IToolbarUI {
     const query = this.searchQuery;
     const count = this.filterFlags(this.stateManager.getFlagNames()).length;
 
-    // Cleared search: the empty field says it, and an empty region stays silent
-    if (!query) {
-      this.searchAnnouncement = '';
-    } else if (count === 0) {
+    if (count === 0) {
       this.searchAnnouncement = `No flags match "${query}"`;
     } else {
       // The query is repeated back so that narrowing a search which happens to
