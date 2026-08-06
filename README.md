@@ -604,6 +604,9 @@ origin has since been unmounted), `Tab` is left to the browser's own ordering.
   so assistive tech reports which state is in effect. Its roving tab stop also
   means a flag costs one `Tab` press to pass, not three
 - Icon-only controls carry visually hidden text rather than relying on `title`
+- Filtering the flag list announces its result count through a `status` region,
+  debounced so a burst of typing produces one announcement rather than one per
+  keystroke
 - Animations are suppressed under `prefers-reduced-motion: reduce`
 
 ## Theme Customization

@@ -25,6 +25,10 @@ const UNLEASH_LOGO = 'https://cdn.getunleash.io/docs-assets/unleash_logo_icon.sv
 const OVERRIDE_VALUES = ['off', 'default', 'on'] as const;
 type OverrideValue = (typeof OVERRIDE_VALUES)[number];
 
+// How long typing has to pause before the search result count is announced.
+// Long enough to swallow a burst of keystrokes, short enough not to feel lost.
+const SEARCH_ANNOUNCE_DELAY_MS = 400;
+
 // Distinguishes the DOM ids of multiple toolbars on the same page
 let instanceCounter = 0;
 
@@ -41,6 +45,10 @@ export class ToolbarUI implements IToolbarUI {
   private customTheme?: InitToolbarOptions['theme'];
   private originalBaseContext: Partial<UnleashContext>;
   private searchQuery: string = '';
+  // Spoken result summary, kept out of the visible UI. Trails searchQuery by
+  // SEARCH_ANNOUNCE_DELAY_MS so it lands once, after typing settles.
+  private searchAnnouncement: string = '';
+  private announceTimer?: ReturnType<typeof setTimeout>;
   private draggable: boolean;
   private showToggleButton: boolean;
   private focusOnOpen: ToolbarFocusTarget;
@@ -276,6 +284,7 @@ export class ToolbarUI implements IToolbarUI {
   }
 
   destroy(): void {
+    clearTimeout(this.announceTimer);
     this.drag.destroy();
     this.keyboard.destroy();
     this.rootElement.remove();
@@ -490,10 +499,7 @@ export class ToolbarUI implements IToolbarUI {
       `;
     }
 
-    // Filter flags based on search query
-    const filteredFlags = this.searchQuery
-      ? flagNames.filter((name) => name.toLowerCase().includes(this.searchQuery.toLowerCase()))
-      : flagNames;
+    const filteredFlags = this.filterFlags(flagNames);
 
     return html`
       <div class="ut-tab-header">
@@ -507,6 +513,10 @@ export class ToolbarUI implements IToolbarUI {
             .value=${this.searchQuery}
             @input=${(e: Event) => this.updateSearch((e.target as HTMLInputElement).value)}
           />
+          <!-- Filtering rewrites the list silently. role="status" is implicitly
+               polite and atomic, so the summary waits for a pause in speech and
+               is read whole. -->
+          <div class="ut-sr-only" role="status">${this.searchAnnouncement}</div>
         </div>
         <button class="ut-btn" @click=${() => this.stateManager.resetOverrides()}>
           Reset All Overrides
@@ -522,8 +532,46 @@ export class ToolbarUI implements IToolbarUI {
     `;
   }
 
+  private filterFlags(flagNames: string[]): string[] {
+    if (!this.searchQuery) return flagNames;
+
+    const query = this.searchQuery.toLowerCase();
+    return flagNames.filter((name) => name.toLowerCase().includes(query));
+  }
+
   private updateSearch(query: string): void {
     this.searchQuery = query;
+
+    // The list itself updates on every keystroke; only the spoken summary waits,
+    // or a screen reader would queue one announcement per character typed.
+    clearTimeout(this.announceTimer);
+
+    // A cleared search has nothing to wait for and nothing to say. Dropping the
+    // old summary now rather than at the end of the delay matters because the
+    // region is only *visually* hidden: for those few hundred milliseconds the
+    // virtual cursor could still read a match count for a search that is gone.
+    if (!query) {
+      this.searchAnnouncement = '';
+      this.render();
+      return;
+    }
+
+    this.render();
+    this.announceTimer = setTimeout(() => this.announceMatches(), SEARCH_ANNOUNCE_DELAY_MS);
+  }
+
+  private announceMatches(): void {
+    const query = this.searchQuery;
+    const count = this.filterFlags(this.stateManager.getFlagNames()).length;
+
+    if (count === 0) {
+      this.searchAnnouncement = `No flags match "${query}"`;
+    } else {
+      // The query is repeated back so that narrowing a search which happens to
+      // keep the same count still reads as a change worth announcing
+      this.searchAnnouncement = `${count} flag${count === 1 ? '' : 's'} match${count === 1 ? 'es' : ''} "${query}"`;
+    }
+
     this.render();
   }
 
