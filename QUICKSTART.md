@@ -205,9 +205,9 @@ All changes apply immediately!
 
 | Key | Action |
 | --- | --- |
-| `Cmd/Ctrl + Shift + F` | Toggle the panel |
-| `Esc` | Minimize back to the floating icon |
-| `Tab` / `Shift + Tab` | Move between controls (cycles inside the panel) |
+| `Cmd/Ctrl + Shift + F` | Open the panel, or focus it when it is already open |
+| `Esc` | Minimize, handing focus back to where you opened it from |
+| `Tab` / `Shift + Tab` | Move between controls; off either end returns you to the page where you left it |
 | `←` `→` | Switch tabs, or change a flag between OFF / — / ON |
 
 Prefer no icon at all, and to land straight in the search box?

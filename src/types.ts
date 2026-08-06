@@ -123,7 +123,7 @@ export type ThemePreset = 'light' | 'dark';
 /**
  * Where to place keyboard focus when the panel opens.
  *
- * - **panel**: the panel container itself. Screen readers announce the dialog,
+ * - **panel**: the panel container itself. Screen readers announce the region,
  *   and the first Tab moves to the first control. (DEFAULT)
  * - **search**: the flag search input (switches to the Feature Flags tab)
  * - **context**: the first Context field (switches to the Context tab)
@@ -191,21 +191,16 @@ export interface InitToolbarOptions {
    */
   showToggleButton?: boolean;
   /**
-   * Keyboard shortcut that toggles the panel open/closed, e.g. `'mod+shift+f'`
-   * (the default). `mod` is Cmd on macOS and Ctrl elsewhere. Set to `false` to
-   * register no global key listener at all.
+   * Keyboard shortcut that summons the panel, e.g. `'mod+shift+f'` (the
+   * default). It has three states: it opens a collapsed panel, moves focus into
+   * an open one, and minimizes only when pressed from inside the toolbar.
+   *
+   * `mod` is Cmd on macOS and Ctrl elsewhere. Set to `false` to register no
+   * global key listener at all.
    *
    * Accepted modifiers: `mod`, `ctrl`, `meta`/`cmd`, `alt`/`option`, `shift`.
    */
   shortcut?: string | false;
-  /**
-   * Keep Tab / Shift+Tab cycling inside the panel while it is open, so keyboard
-   * users don't fall through into the page behind it (default: true).
-   *
-   * This is a "soft" trap: the page stays interactive for mouse users and is not
-   * marked `inert`, and Escape always releases focus back to the trigger.
-   */
-  trapFocus?: boolean;
   /**
    * Minimize the panel when a pointer press lands outside of it (default: false).
    *
@@ -269,7 +264,10 @@ export interface UnleashToolbarInstance {
    */
   show(options?: ShowToolbarOptions): void;
   hide(): void;
-  /** Open the panel if it is collapsed, minimize it if it is open */
+  /**
+   * Open the panel if it is collapsed, move focus into it if it is open but
+   * focus is elsewhere, and minimize it only when focus is already inside.
+   */
   toggle(options?: ShowToolbarOptions): void;
   destroy(): void;
 
