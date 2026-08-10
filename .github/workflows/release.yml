@@ -26,9 +26,11 @@ jobs:
       # This repo uses npm (package-lock.json). The template's default
       # setup-command is pnpm (`pnpm install --frozen-lockfile`), which would
       # fail here since there is no pnpm-lock.yaml. Override it so deps install
-      # reproducibly from the npm lockfile AND the `prepare` script
-      # (npm run build) fires — which is what populates dist/ before publish.
-      setup-command: npm ci
+      # reproducibly from the npm lockfile. The explicit `npm run build` is
+      # required because .npmrc sets ignore-scripts=true, which stops the
+      # `prepare` script from firing during install and publish — this build is
+      # what populates dist/ before npm publish packs it.
+      setup-command: npm ci && npm run build
     secrets:
       UNLEASH_BOT_APP_ID: ${{ secrets.UNLEASH_BOT_APP_ID }}
       UNLEASH_BOT_PRIVATE_KEY: ${{ secrets.UNLEASH_BOT_PRIVATE_KEY }}

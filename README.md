@@ -749,3 +749,7 @@ Apache-2.0
 - [GitHub Issues](https://github.com/Unleash/toolbar/issues)
 - [Unleash Slack Community](https://unleash-community.slack.com/)
 - [Unleash Documentation](https://docs.getunleash.io/)
+
+## Development
+
+Dependency install scripts are disabled (`ignore-scripts=true` in `.npmrc`) as supply-chain hardening. This also skips this repo's own `prepare` script, so run `npm run build` manually after `npm ci`. CI and the release workflow run explicit build steps.
