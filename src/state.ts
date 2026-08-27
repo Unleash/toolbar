@@ -121,8 +121,12 @@ class EventEmitter {
   private dispatch(event: ToolbarEvent): void {
     // Snapshot the set: iterating it live would also visit listeners added
     // while this dispatch is running, handing them an event they subscribed
-    // too late for.
+    // too late for. The membership check covers the mirror case the snapshot
+    // opens up — a listener unsubscribed by an earlier listener in this same
+    // loop must not still be called from the stale array.
     Array.from(this.listeners).forEach((listener) => {
+      if (!this.listeners.has(listener)) return;
+
       try {
         listener(event);
       } catch (error) {

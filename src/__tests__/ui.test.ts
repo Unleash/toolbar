@@ -4,8 +4,12 @@ import { ToolbarStateManager } from '../state';
 import type { WrappedUnleashClient } from '../types';
 import { computeDragPosition, ToolbarUI } from '../ui';
 
-/** Let the deferred (microtask-scheduled) event dispatch run */
-const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve, 0));
+/**
+ * Let the deferred event dispatch run. Awaiting a resolved promise is enough:
+ * the dispatch is scheduled the same way, and it was queued first — no timers
+ * involved, so this holds under fake timers too.
+ */
+const flushMicrotasks = () => Promise.resolve();
 
 describe('ToolbarUI', () => {
   let stateManager: ToolbarStateManager;

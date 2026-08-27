@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToolbarStateManager } from '../state';
 import type { FlagOverride, UnleashContext } from '../types';
 
-/** Let the deferred (microtask-scheduled) event dispatch run */
-const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve, 0));
+/**
+ * Let the deferred event dispatch run. Awaiting a resolved promise is enough:
+ * the dispatch is scheduled the same way, and it was queued first — no timers
+ * involved, so this holds under fake timers too.
+ */
+const flushMicrotasks = () => Promise.resolve();
 
 describe('ToolbarStateManager', () => {
   let stateManager: ToolbarStateManager;
@@ -686,6 +690,23 @@ describe('ToolbarStateManager', () => {
       expect(goodListener).toHaveBeenCalled(); // Should still be called
 
       consoleErrorSpy.mockRestore();
+    });
+
+    it('should not notify a listener unsubscribed by an earlier listener in the same dispatch', () => {
+      const second = vi.fn();
+      let unsubscribeSecond: (() => void) | undefined;
+      const first = vi.fn(() => unsubscribeSecond?.());
+
+      // Insertion order is iteration order, so `first` runs while `second` is
+      // still in the dispatch's snapshot
+      stateManager.subscribe(first);
+      unsubscribeSecond = stateManager.subscribe(second);
+
+      // A synchronous event, so the dispatch loop is the one under test
+      stateManager.setContextOverride({ userId: 'u1' });
+
+      expect(first).toHaveBeenCalledTimes(1);
+      expect(second).not.toHaveBeenCalled();
     });
 
     it('should not notify a listener that subscribes during a dispatch', () => {
