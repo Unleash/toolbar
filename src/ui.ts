@@ -63,6 +63,9 @@ export class ToolbarUI implements IToolbarUI {
   // Owns the shortcut, Escape, the focus tether and outside clicks
   private keyboard: KeyboardController;
 
+  // Drops the state-manager subscription on destroy()
+  private unsubscribe: () => void = () => {};
+
   // Ephemeral "fully hidden" state (NOT persisted): the toolbar reappears on
   // the next page load. Set via the header's close (×) button.
   private hiddenCompletely = false;
@@ -138,8 +141,11 @@ export class ToolbarUI implements IToolbarUI {
       },
     );
 
-    // Subscribe to state changes
-    this.stateManager.subscribe(() => {
+    // Subscribe to state changes. Kept so destroy() can drop it: state events
+    // are not all delivered inline, so a notification can still be in flight
+    // when the toolbar goes away — and rendering into a detached root then
+    // leaks this instance for as long as the state manager lives.
+    this.unsubscribe = this.stateManager.subscribe(() => {
       this.render();
     });
 
@@ -285,6 +291,7 @@ export class ToolbarUI implements IToolbarUI {
 
   destroy(): void {
     clearTimeout(this.announceTimer);
+    this.unsubscribe();
     this.drag.destroy();
     this.keyboard.destroy();
     this.rootElement.remove();

@@ -73,6 +73,10 @@ async function deleteCookie(name: string): Promise<void> {
  */
 class EventEmitter {
   private listeners: Set<ToolbarEventListener> = new Set();
+  // Events waiting for the queued microtask flush, keyed by type so a burst of
+  // the same event collapses into one notification
+  private scheduled: Map<ToolbarEvent['type'], ToolbarEvent> = new Map();
+  private flushQueued = false;
 
   subscribe(listener: ToolbarEventListener): () => void {
     this.listeners.add(listener);
@@ -80,7 +84,46 @@ class EventEmitter {
   }
 
   emit(event: ToolbarEvent): void {
-    this.listeners.forEach((listener) => {
+    this.dispatch(event);
+  }
+
+  /**
+   * Deliver on the next microtask instead of inline, coalescing repeats of the
+   * same event type into a single notification.
+   *
+   * Used for events raised by a flag *evaluation*, which can happen while a
+   * framework is rendering. Notifying a subscriber inline there means its
+   * setState lands mid-render — React rejects that with "Cannot update a
+   * component while rendering a different component". A microtask runs as soon
+   * as the current call stack unwinds (same frame, before paint) but outside
+   * any render phase.
+   *
+   * Scheduled with a resolved promise rather than `queueMicrotask` so that test
+   * suites running under fake timers — which can stub `queueMicrotask` — still
+   * receive the notification.
+   */
+  emitDeferred(event: ToolbarEvent): void {
+    this.scheduled.set(event.type, event);
+
+    if (this.flushQueued) return;
+    this.flushQueued = true;
+
+    Promise.resolve().then(() => {
+      this.flushQueued = false;
+      const events = Array.from(this.scheduled.values());
+      this.scheduled.clear();
+      for (const scheduledEvent of events) {
+        this.dispatch(scheduledEvent);
+      }
+    });
+  }
+
+  private dispatch(event: ToolbarEvent): void {
+    // Snapshot the set: a listener may unsubscribe (or subscribe) while being
+    // notified, and iterating the live Set would visit listeners added during
+    // this dispatch — or one that has just unsubscribed.
+    Array.from(this.listeners).forEach((listener) => {
+      if (!this.listeners.has(listener)) return;
       try {
         listener(event);
       } catch (error) {
@@ -298,7 +341,14 @@ export class ToolbarStateManager {
   }
 
   /**
-   * Record a flag evaluation (updates state without emitting events)
+   * Record a flag evaluation.
+   *
+   * Called from inside `isEnabled()`/`getVariant()`, so it runs on the app's
+   * render path. The first sighting of a flag changes the list the toolbar
+   * shows, which does need a notification — but it is delivered on the next
+   * microtask (see `emitDeferred`), never inline, so a subscriber's setState
+   * can't land in the middle of a React render. Re-evaluations of an
+   * already-known flag notify nobody.
    */
   recordEvaluation(
     name: string,
@@ -320,9 +370,9 @@ export class ToolbarStateManager {
 
     this.persist();
 
-    // Emit event only for new flags to trigger UI update
+    // Only a new flag changes what the toolbar has to show
     if (isNewFlag) {
-      this.eventEmitter.emit({
+      this.eventEmitter.emitDeferred({
         type: 'sdk_updated',
         timestamp: Date.now(),
       });

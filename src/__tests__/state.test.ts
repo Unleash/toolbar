@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToolbarStateManager } from '../state';
 import type { FlagOverride, UnleashContext } from '../types';
 
+/** Let the deferred (microtask-scheduled) event dispatch run */
+const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 describe('ToolbarStateManager', () => {
   let stateManager: ToolbarStateManager;
 
@@ -72,11 +75,16 @@ describe('ToolbarStateManager', () => {
       expect(metadata?.lastDefaultValue).toEqual(variant);
     });
 
-    it('should emit sdk_updated event for new flags', () => {
+    it('should emit sdk_updated event for new flags', async () => {
       const listener = vi.fn();
       stateManager.subscribe(listener);
 
       stateManager.recordEvaluation('newFlag', 'flag', false, false, {});
+
+      // Deferred: an evaluation can happen mid-render, so the notification is
+      // never delivered inline
+      expect(listener).not.toHaveBeenCalled();
+      await flushMicrotasks();
 
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -85,13 +93,28 @@ describe('ToolbarStateManager', () => {
       );
     });
 
-    it('should NOT emit events for existing flags', () => {
+    it('should coalesce the notification for a burst of new flags', async () => {
+      const listener = vi.fn();
+      stateManager.subscribe(listener);
+
+      stateManager.recordEvaluation('burst1', 'flag', true, true, {});
+      stateManager.recordEvaluation('burst2', 'flag', true, true, {});
+      stateManager.recordEvaluation('burst3', 'flag', true, true, {});
+
+      await flushMicrotasks();
+
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT emit events for existing flags', async () => {
       stateManager.recordEvaluation('existingFlag', 'flag', true, true, {});
+      await flushMicrotasks();
 
       const listener = vi.fn();
       stateManager.subscribe(listener);
 
       stateManager.recordEvaluation('existingFlag', 'flag', false, false, {});
+      await flushMicrotasks();
 
       expect(listener).not.toHaveBeenCalled();
     });
@@ -595,29 +618,44 @@ describe('ToolbarStateManager', () => {
   });
 
   describe('event subscription', () => {
-    it('should allow subscribing to events', () => {
+    it('should allow subscribing to events', async () => {
       const listener = vi.fn();
       stateManager.subscribe(listener);
 
       stateManager.recordEvaluation('flag', 'flag', true, true, {});
+      await flushMicrotasks();
 
       expect(listener).toHaveBeenCalled();
     });
 
-    it('should allow unsubscribing from events', () => {
+    it('should allow unsubscribing from events', async () => {
       const listener = vi.fn();
       const unsubscribe = stateManager.subscribe(listener);
 
       stateManager.recordEvaluation('flag1', 'flag', true, true, {});
+      await flushMicrotasks();
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
 
       stateManager.recordEvaluation('flag2', 'flag', false, false, {});
+      await flushMicrotasks();
       expect(listener).toHaveBeenCalledTimes(1); // Still 1, not called again
     });
 
-    it('should handle multiple subscribers', () => {
+    it('should not deliver a deferred event to a listener that unsubscribed first', async () => {
+      const listener = vi.fn();
+      const unsubscribe = stateManager.subscribe(listener);
+
+      stateManager.recordEvaluation('flag', 'flag', true, true, {});
+      // Unsubscribing before the queued dispatch runs must cancel delivery
+      unsubscribe();
+      await flushMicrotasks();
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should handle multiple subscribers', async () => {
       const listener1 = vi.fn();
       const listener2 = vi.fn();
 
@@ -625,12 +663,13 @@ describe('ToolbarStateManager', () => {
       stateManager.subscribe(listener2);
 
       stateManager.recordEvaluation('flag', 'flag', true, true, {});
+      await flushMicrotasks();
 
       expect(listener1).toHaveBeenCalled();
       expect(listener2).toHaveBeenCalled();
     });
 
-    it('should catch and log errors in listeners', () => {
+    it('should catch and log errors in listeners', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const badListener = vi.fn(() => {
         throw new Error('Listener error');
@@ -641,11 +680,26 @@ describe('ToolbarStateManager', () => {
       stateManager.subscribe(goodListener);
 
       stateManager.recordEvaluation('flag', 'flag', true, true, {});
+      await flushMicrotasks();
 
       expect(consoleErrorSpy).toHaveBeenCalled();
       expect(goodListener).toHaveBeenCalled(); // Should still be called
 
       consoleErrorSpy.mockRestore();
+    });
+
+    it('should not notify a listener that subscribes during a dispatch', () => {
+      const late = vi.fn();
+      const first = vi.fn(() => {
+        stateManager.subscribe(late);
+      });
+
+      stateManager.subscribe(first);
+      // A synchronous event, so the dispatch loop is the one under test
+      stateManager.setContextOverride({ userId: 'u1' });
+
+      expect(first).toHaveBeenCalledTimes(1);
+      expect(late).not.toHaveBeenCalled();
     });
   });
 
