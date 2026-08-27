@@ -119,11 +119,10 @@ class EventEmitter {
   }
 
   private dispatch(event: ToolbarEvent): void {
-    // Snapshot the set: a listener may unsubscribe (or subscribe) while being
-    // notified, and iterating the live Set would visit listeners added during
-    // this dispatch — or one that has just unsubscribed.
+    // Snapshot the set: iterating it live would also visit listeners added
+    // while this dispatch is running, handing them an event they subscribed
+    // too late for.
     Array.from(this.listeners).forEach((listener) => {
-      if (!this.listeners.has(listener)) return;
       try {
         listener(event);
       } catch (error) {
