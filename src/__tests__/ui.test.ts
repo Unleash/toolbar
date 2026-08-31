@@ -3,13 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToolbarStateManager } from '../state';
 import type { WrappedUnleashClient } from '../types';
 import { computeDragPosition, ToolbarUI } from '../ui';
-
-/**
- * Let the deferred event dispatch run. Awaiting a resolved promise is enough:
- * the dispatch is scheduled the same way, and it was queued first — no timers
- * involved, so this holds under fake timers too.
- */
-const flushMicrotasks = () => Promise.resolve();
+import { createMockClient, flushMicrotasks } from './test-utils';
 
 describe('ToolbarUI', () => {
   let stateManager: ToolbarStateManager;
@@ -25,15 +19,10 @@ describe('ToolbarUI', () => {
     // Create state manager
     stateManager = new ToolbarStateManager('local', 'test-toolbar');
 
-    // Create mock client
-    mockClient = {
+    mockClient = createMockClient({
       isEnabled: vi.fn((name: string) => name === 'enabled-flag'),
       getVariant: vi.fn(() => ({ name: 'control', enabled: true })),
-      getContext: vi.fn(() => ({})),
-      updateContext: vi.fn(() => Promise.resolve()),
-      on: vi.fn(),
-      start: vi.fn(),
-    } as unknown as UnleashClient;
+    });
 
     // Create wrapped client with original
     wrappedClient = {
@@ -891,11 +880,15 @@ describe('ToolbarUI', () => {
         initiallyVisible: true,
       });
 
+      // destroy() detaches the root, so the re-render has to be observed on the
+      // root itself — the container is empty either way
+      const root = container.querySelector('.unleash-toolbar-container') as HTMLElement;
+
       ui.destroy();
       stateManager.recordEvaluation('new-flag', 'flag', true, true, {});
       await flushMicrotasks();
 
-      expect(container.querySelector('.unleash-toolbar-container')).toBeNull();
+      expect(root.querySelectorAll('.ut-flag-item')).toHaveLength(0);
     });
 
     it('should update override count when overrides change', () => {
