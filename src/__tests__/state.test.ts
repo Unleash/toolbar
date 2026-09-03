@@ -1,13 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToolbarStateManager } from '../state';
 import type { FlagOverride, UnleashContext } from '../types';
-
-/**
- * Let the deferred event dispatch run. Awaiting a resolved promise is enough:
- * the dispatch is scheduled the same way, and it was queued first — no timers
- * involved, so this holds under fake timers too.
- */
-const flushMicrotasks = () => Promise.resolve();
+import { flushMicrotasks } from './test-utils';
 
 describe('ToolbarStateManager', () => {
   let stateManager: ToolbarStateManager;

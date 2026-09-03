@@ -64,7 +64,7 @@ export class ToolbarUI implements IToolbarUI {
   private keyboard: KeyboardController;
 
   // Drops the state-manager subscription on destroy()
-  private unsubscribe: () => void = () => {};
+  private unsubscribe: () => void;
 
   // Ephemeral "fully hidden" state (NOT persisted): the toolbar reappears on
   // the next page load. Set via the header's close (×) button.

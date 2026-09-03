@@ -3,26 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToolbarStateManager } from '../state';
 import { wrapUnleashClient } from '../wrapper';
-import type { UnleashClient } from 'unleash-proxy-client';
+import { createMockClient } from "./test-utils";
 
 /**
  * Reproduces the "Cannot update a component while rendering a different
  * component" warning: a subscriber that setStates, plus a component that
  * evaluates a not-yet-seen flag during its render.
  */
-
-function createMockClient(): UnleashClient {
-  return {
-    isEnabled: () => true,
-    getVariant: () => ({ name: 'disabled', enabled: false }),
-    getContext: () => ({ appName: 'test' }),
-    updateContext: () => Promise.resolve(),
-    on: () => undefined,
-    off: () => undefined,
-    start: () => Promise.resolve(),
-    stop: () => undefined,
-  } as unknown as UnleashClient;
-}
 
 describe('render-phase emit', () => {
   let errors: string[];
@@ -44,13 +31,14 @@ describe('render-phase emit', () => {
   });
 
   it('does not warn when a new flag is evaluated during another component render', async () => {
-    // Stands in for the app's own toolbar-event subscriber (LogRocketProvider /
-    // FlightRecorderProvider in the reported case)
+    let notifications = 0;
+
     function Subscriber({ children }: { children: React.ReactNode }) {
       const [, setTick] = useState(0);
 
       useEffect(() => {
         return stateManager.subscribe(() => {
+          notifications += 1;
           setTick((t) => t + 1);
         });
       }, []);
@@ -81,5 +69,8 @@ describe('render-phase emit', () => {
 
     const renderPhaseWarnings = errors.filter((e) => e.includes('while rendering a different'));
     expect(renderPhaseWarnings).toEqual([]);
+    // Absence of a React dev-mode warning is only meaningful if the subscriber
+    // was actually reached — otherwise a reworded warning would pass silently
+    expect(notifications).toBeGreaterThan(0);
   });
 });

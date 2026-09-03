@@ -406,6 +406,10 @@ export class ToolbarStateManager {
 
     this.persist();
 
+    // Synchronous on purpose, unlike the evaluation path (see `emitDeferred`).
+    // The toolbar's own keyboard handlers call `focusWithin()` straight after
+    // setting an override, relying on this re-render to have swapped the
+    // control in; deferred, focus drops to the body.
     this.eventEmitter.emit({
       type: 'flag_override_changed',
       name,

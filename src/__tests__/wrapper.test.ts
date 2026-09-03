@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToolbarStateManager } from '../state';
 import type { UnleashVariant } from '../types';
 import { isWrappedClient, unwrapUnleashClient, wrapUnleashClient } from '../wrapper';
+import { createMockClient } from './test-utils';
 
 describe('wrapUnleashClient', () => {
   let mockClient: UnleashClient;
@@ -11,23 +12,15 @@ describe('wrapUnleashClient', () => {
   beforeEach(() => {
     localStorage.clear();
 
-    // Create a comprehensive mock Unleash client
-    mockClient = {
+    mockClient = createMockClient({
       isEnabled: vi.fn((name: string) => name === 'enabledFlag'),
       getVariant: vi.fn((name: string) => ({
         name: name === 'variantFlag' ? 'blue' : 'control',
         enabled: name === 'variantFlag',
         payload: undefined,
       })),
-      getContext: vi.fn(() => ({ sessionId: 'base-session' })),
-      updateContext: vi.fn(() => Promise.resolve()),
-      on: vi.fn(),
-      start: vi.fn(() => Promise.resolve()),
-      getAllToggles: vi.fn(() => []),
-      setContextField: vi.fn(),
-      stop: vi.fn(),
-      off: vi.fn(),
-    } as unknown as UnleashClient;
+      getContext: vi.fn(() => ({ appName: 'test', sessionId: 'base-session' })),
+    });
 
     stateManager = new ToolbarStateManager('local', 'test-wrapper-state', false);
   });
@@ -480,14 +473,7 @@ describe('unwrapUnleashClient', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    mockClient = {
-      isEnabled: vi.fn(() => false),
-      getVariant: vi.fn(() => ({ name: 'control', enabled: false })),
-      getContext: vi.fn(() => ({})),
-      updateContext: vi.fn(() => Promise.resolve()),
-      on: vi.fn(),
-      start: vi.fn(() => Promise.resolve()),
-    } as unknown as UnleashClient;
+    mockClient = createMockClient();
     stateManager = new ToolbarStateManager('memory', 'test', false);
   });
 
@@ -511,14 +497,7 @@ describe('isWrappedClient', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    mockClient = {
-      isEnabled: vi.fn(() => false),
-      getVariant: vi.fn(() => ({ name: 'control', enabled: false })),
-      getContext: vi.fn(() => ({})),
-      updateContext: vi.fn(() => Promise.resolve()),
-      on: vi.fn(),
-      start: vi.fn(() => Promise.resolve()),
-    } as unknown as UnleashClient;
+    mockClient = createMockClient();
     stateManager = new ToolbarStateManager('memory', 'test', false);
   });
 
