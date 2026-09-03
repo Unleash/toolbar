@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useFlag, useVariant } from '@unleash/proxy-client-react'
 import { UnleashToolbarProvider } from '../../../dist/react.es.js'
+import { RenderPhaseDemo } from './RenderPhaseDemo.jsx'
 import '../../../dist/toolbar.css'
 
 // Unleash configuration - matches official React SDK API
@@ -112,16 +114,46 @@ function FeatureFlags() {
   )
 }
 
-function App() {
+/** Hash-based page switch, to keep the example dependency-free */
+function useHashPage() {
+  const [hash, setHash] = useState(() => window.location.hash)
+
+  useEffect(() => {
+    const onChange = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', onChange)
+    return () => window.removeEventListener('hashchange', onChange)
+  }, [])
+
+  return hash === '#/render-phase' ? 'render-phase' : 'basic'
+}
+
+function Nav({ page }) {
   return (
-    <UnleashToolbarProvider 
+    <div className="demo-actions">
+      <a href="#/" aria-current={page === 'basic' ? 'page' : undefined}>
+        {page === 'basic' ? '▸ ' : ''}Basic integration
+      </a>
+      {' · '}
+      <a href="#/render-phase" aria-current={page === 'render-phase' ? 'page' : undefined}>
+        {page === 'render-phase' ? '▸ ' : ''}Render-phase safety
+      </a>
+    </div>
+  )
+}
+
+function App() {
+  const page = useHashPage()
+
+  return (
+    <UnleashToolbarProvider
       config={unleashConfig}
       toolbarOptions={import.meta.env.DEV ? {
         themePreset: 'dark',
         initiallyVisible: false,
       } : undefined}
     >
-      <FeatureFlags />
+      <Nav page={page} />
+      {page === 'render-phase' ? <RenderPhaseDemo /> : <FeatureFlags />}
     </UnleashToolbarProvider>
   );
 }
