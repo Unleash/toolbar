@@ -4,6 +4,13 @@ import { ToolbarStateManager } from '../state';
 import type { WrappedUnleashClient } from '../types';
 import { computeDragPosition, ToolbarUI } from '../ui';
 
+/**
+ * Let the deferred event dispatch run. Awaiting a resolved promise is enough:
+ * the dispatch is scheduled the same way, and it was queued first — no timers
+ * involved, so this holds under fake timers too.
+ */
+const flushMicrotasks = () => Promise.resolve();
+
 describe('ToolbarUI', () => {
   let stateManager: ToolbarStateManager;
   let mockClient: UnleashClient;
@@ -864,16 +871,31 @@ describe('ToolbarUI', () => {
   });
 
   describe('state reactivity', () => {
-    it('should re-render when state changes', () => {
+    it('should re-render when a newly evaluated flag arrives', async () => {
       new ToolbarUI(stateManager, wrappedClient, { container, initiallyVisible: true });
 
       const initialFlagCount = container.querySelectorAll('.ut-flag-item').length;
       expect(initialFlagCount).toBe(0);
 
       stateManager.recordEvaluation('new-flag', 'flag', true, true, {});
+      // Evaluations notify on the next microtask, not inline
+      await flushMicrotasks();
 
       const updatedFlagCount = container.querySelectorAll('.ut-flag-item').length;
       expect(updatedFlagCount).toBe(1);
+    });
+
+    it('should stop re-rendering once destroyed', async () => {
+      const ui = new ToolbarUI(stateManager, wrappedClient, {
+        container,
+        initiallyVisible: true,
+      });
+
+      ui.destroy();
+      stateManager.recordEvaluation('new-flag', 'flag', true, true, {});
+      await flushMicrotasks();
+
+      expect(container.querySelector('.unleash-toolbar-container')).toBeNull();
     });
 
     it('should update override count when overrides change', () => {
