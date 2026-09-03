@@ -87,4 +87,26 @@ Try these scenarios:
 3. **Variant Testing**: Override the payment-provider variant to test different providers
 4. **Reset**: Clear overrides to restore original SDK values
 
+## Second page: lazily evaluated flags (`#/render-phase`)
+
+The demo above is deliberately minimal, which also means it exercises very
+little: every flag is read once, up front, by a single component, with nothing
+subscribed to toolbar events. Plenty of real-world shapes never get touched.
+
+The page at `#/render-phase` adds the two that matter most:
+
+1. An app-level subscriber to toolbar events that calls `setState` — typically
+   an observability or session-recording provider.
+2. Flags first evaluated *later*, when a route or panel mounts, rather than all
+   up front on the first render.
+
+Together they exercise the path where a flag's first evaluation happens during a
+render while a subscriber is listening. Reveal a card and watch the console: it
+should stay quiet, and revealing 12 at once should produce one notification
+rather than twelve.
+
+The page reads events through `window.unleashToolbar.stateManager`, because the
+toolbar has no public `subscribe()` yet. Both example pages import from
+`../../../dist`, so run `npm run build` in the repo root first.
+
 Enjoy! 🚀
