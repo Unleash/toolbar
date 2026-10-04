@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^20.19.0 || >=24.10.0"
   },
   "scripts": {
     "dev": "vite",
@@ -13,8 +13,7 @@
     "test:unit": "vitest",
     "test:e2e": "playwright test",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build",
-    "lint": "eslint . --fix --cache"
+    "type-check": "vue-tsc --build"
   },
   "dependencies": {
     "@unleash/toolbar": "file:../..",
@@ -27,13 +26,8 @@
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.2",
-    "@vitest/eslint-plugin": "^1.5.0",
-    "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.8.1",
-    "eslint": "^10.8.0",
-    "eslint-plugin-playwright": "^2.3.0",
-    "eslint-plugin-vue": "~10.10.0",
     "jiti": "^2.6.1",
     "jsdom": "^27.2.0",
     "npm-run-all2": "^8.0.4",
