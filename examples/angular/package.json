@@ -37,7 +37,7 @@
     "@angular/core": "^21.2.20",
     "@angular/forms": "^21.2.20",
     "@angular/platform-browser": "^21.2.20",
-    "@angular/router": "^21.2.20",
+    "@angular/router": "^21.2.24",
     "@unleash/toolbar": "file:../..",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
