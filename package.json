@@ -90,7 +90,7 @@
     "@types/react-dom": "^18.3.1 || ^19.2.3",
     "@unleash/nextjs": "^1.6.4",
     "@unleash/proxy-client-react": "^5.0.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "cssnano": "^7.1.2",
     "eslint": "^10.8.0",
     "jsdom": "^27.3.0",
@@ -100,11 +100,11 @@
     "terser": "^5.44.1",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.49.0",
-    "unleash-client": "^6.9.3",
+    "unleash-client": "^6.12.2",
     "unleash-proxy-client": "^3.4.1",
     "unplugin-dts": "^1.0.3",
     "vite": "^8.0.16",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "dependencies": {
     "lit": "^3.3.1"
@@ -113,6 +113,8 @@
     "next": {
       "postcss": "^8.5.12"
     },
-    "sharp": ">0.35.4"
+    "sharp": ">0.35.4",
+    "minimatch": "^11.0.1",
+    "glob": "^14.0.2"
   }
 }
