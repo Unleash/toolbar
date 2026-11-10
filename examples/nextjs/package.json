@@ -10,7 +10,7 @@
   "dependencies": {
     "@unleash/nextjs": "^1.6.7",
     "@unleash/toolbar": "file:../..",
-    "next": "16.3.8",
+    "next": "16.4.1",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "unleash-proxy-client": "^3.7.8"
