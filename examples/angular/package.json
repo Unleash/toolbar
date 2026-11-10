@@ -29,7 +29,9 @@
     "esbuild": "^0.28.1",
     "vite": ">=8.0.5",
     "piscina": ">=5.2.0",
-    "@hono/node-server": ">=2.0.5"
+    "@hono/node-server": ">=2.0.5",
+    "minimatch": "^11.0.1",
+    "glob": "^14.0.2"
   },
   "dependencies": {
     "@angular/common": "^21.2.25",
